@@ -9,17 +9,26 @@ const [taskDescription, settaskDescription] = useState("")
 const [asignTo, setasignTo] = useState("")
 const [category, setcategory] = useState("")
 const [date, setdate] = useState("")
-const [Task, setTask] = useState([])
+const [newTask, setNewTask] = useState({})
 
   const submitHandler = (e)=>{
    e.preventDefault()
-   setTask([{taskTitle,taskDescription,asignTo,category,date,active:false,newTask:true,completed:false,failed:false}])
+   setNewTask({taskTitle,taskDescription,category,date,active:false,newTask:true,completed:false,failed:false})
    settaskTitle("");
    settaskDescription("");
    setasignTo("");
-   setcategory("");
+   setcategory(""); 
    setdate("");
-   console.log(Task);
+   const data= JSON.parse(localStorage.getItem('employees'))
+   data.forEach((e)=>{
+    if(asignTo===e.firstName){
+      e.task.push(newTask)
+      console.log(e.task);
+
+      localStorage.setItem('employees',JSON.stringify(data))
+    }
+    localStorage.setItem('employees',JSON.stringify(data))
+   })
   }
   return (
    <div className="flex justify-center items-start mt-10">

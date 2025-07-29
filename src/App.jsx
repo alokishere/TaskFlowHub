@@ -5,6 +5,7 @@ import AdminDashboard from "./components/DashBoard/AdminDashboard";
 import { AuthContext } from "./context/ContextProvider";
 
 const App = () => {
+  // localStorage.clear()
   const AuthData = useContext(AuthContext);
 
   const [user, setuser] = useState(null);
@@ -41,7 +42,7 @@ const App = () => {
     <>
       {!user ? <Login handleaAuth={handleaAuth} /> : ""}
 
-      {user === "admin" ? <AdminDashboard data={loggedInUserdata}/> : (user == 'employee'? <EmployeeDashboard data={loggedInUserdata} />: null)}
+      {user === "admin" ? <AdminDashboard changeUser={setuser}  data={loggedInUserdata}/> : (user == 'employee'? <EmployeeDashboard changeUser={setuser} data={loggedInUserdata} />: null)}
     </>
   );
 };
