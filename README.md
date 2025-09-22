@@ -1,3 +1,17 @@
+#admin id & password is 
+admin@me.com     123
+
+
+employee id & passwords 
+a@a.com     123
+b@b.com     123
+c@c.com     123
+d@d.com     123
+e@e.com     123
+
+
+
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
