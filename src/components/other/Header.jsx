@@ -1,13 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 
 const Header = ({ data, changeUser, name }) => {
-  const [username, setusername] = useState("");
   const logOutUser = () => {
-    // localStorage.clear()
-    localStorage.removeItem("loggedInUser");
-    // window.location.reload()
     changeUser(null);
-    setusername("");
   };
 
   return (
