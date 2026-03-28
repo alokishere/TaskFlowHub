@@ -1,46 +1,54 @@
 const User = require('../models/User');
-const { generateOTP, storeOTP, verifyOTP } = require('../utils/otp');
-const { sendOTPEmail } = require('../utils/emailService');
-const { hashPassword } = require('../utils/bcrypt');
 
-const register = async (req, res, next) => {
+const sanitizeUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role
+});
+
+const validateEmail = (email = '') => /^\S+@\S+\.\S+$/.test(email);
+
+const bootstrapAdmin = async (req, res, next) => {
   try {
-    const { firstName, email, password, role = 'employee' } = req.body;
+    const { name, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email already registered'
-      });
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: 'Name, email and password are required' });
     }
 
-    const user = new User({
-      firstName,
-      email,
+    if (!validateEmail(email)) {
+      return res.status(400).json({ success: false, error: 'Invalid email' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+    }
+
+    const adminExists = await User.exists({ role: 'admin' });
+    if (adminExists) {
+      return res.status(400).json({ success: false, error: 'Admin already exists. Login with admin account.' });
+    }
+
+    const user = await User.create({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password,
-      role
+      role: 'admin'
     });
 
-    await user.save();
+    const token = user.getAuthToken();
 
-    const token = user.generateAuthToken();
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: 'User registered successfully',
-      data: {
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          email: user.email,
-          role: user.role
-        },
-        token
-      }
+      message: 'Admin account created',
+      data: { user: sanitizeUser(user), token }
     });
   } catch (error) {
-    next(error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, error: 'Email already in use' });
+    }
+    return next(error);
   }
 };
 
@@ -48,151 +56,37 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required' });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password');
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
+      return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
-    const token = user.generateAuthToken();
+    const token = user.getAuthToken();
 
-    res.json({
+    return res.json({
       success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          email: user.email,
-          role: user.role
-        },
-        token
-      }
+      data: { user: sanitizeUser(user), token }
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-const forgotPassword = async (req, res, next) => {
-  try {
-    const { email } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'No account found with this email'
-      });
-    }
-
-    const otp = generateOTP();
-    storeOTP(email, otp);
-
-    const emailSent = await sendOTPEmail(email, otp);
-    if (!emailSent) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to send OTP email'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'OTP sent to your email',
-      data: {
-        otpId: email
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyOTP = async (req, res, next) => {
-  try {
-    const { email, otp, newPassword } = req.body;
-
-    const isValid = verifyOTP(email, otp);
-    if (!isValid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or expired OTP'
-      });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password reset successfully'
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyToken = async (req, res, next) => {
-  try {
-    const { token } = req.body;
-
-    const { verifyToken } = require('../utils/jwt');
-    const decoded = verifyToken(token);
-
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid token or user not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        valid: true,
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          email: user.email,
-          role: user.role
-        }
-      }
-    });
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      data: {
-        valid: false,
-        error: 'Invalid token'
-      }
-    });
-  }
+const me = async (req, res) => {
+  return res.json({ success: true, data: { user: sanitizeUser(req.user) } });
 };
 
 module.exports = {
-  register,
+  bootstrapAdmin,
   login,
-  forgotPassword,
-  verifyOTP,
-  verifyToken
+  me
 };

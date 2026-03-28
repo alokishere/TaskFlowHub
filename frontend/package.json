@@ -1,7 +1,7 @@
 {
-  "name": "reactproject",
+  "name": "employee-management-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,14 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.11",
-    "install": "^0.13.0",
-    "npm": "^11.4.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^6.8.0",
     "axios": "^1.6.0",
-    "tailwindcss": "^4.1.11"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
