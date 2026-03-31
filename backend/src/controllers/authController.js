@@ -1,93 +1,112 @@
 const User = require('../models/User');
+const { generateToken } = require('../utils/jwt');
 
 const sanitizeUser = (user) => ({
   id: user._id,
   name: user.name,
   email: user.email,
-  role: user.role
+  mobile: user.mobile,
+  role: user.role,
+  image: user.image,
+  department: user.department,
+  salary: user.salary,
+  status: user.status
 });
-
-const validateEmail = (email = '') => /^\S+@\S+\.\S+$/.test(email);
 
 const bootstrapAdmin = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, error: 'Name, email and password are required' });
-    }
-
-    if (!validateEmail(email)) {
-      return res.status(400).json({ success: false, error: 'Invalid email' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
-    }
-
-    const adminExists = await User.exists({ role: 'admin' });
+    const adminExists = await User.findOne({ role: 'admin' });
     if (adminExists) {
-      return res.status(400).json({ success: false, error: 'Admin already exists. Login with admin account.' });
+      return res.status(400).json({ success: false, message: 'Admin already exists' });
     }
 
+    const { name, email, password, mobile } = req.body;
+    
     const user = await User.create({
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
+      name,
+      email,
       password,
-      role: 'admin'
+      mobile,
+      role: 'admin',
+      department: 'Management',
+      salary: 0,
+      status: 'active'
     });
 
-    const token = user.getAuthToken();
+    const token = generateToken({ id: user._id, role: user.role });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: 'Admin account created',
       data: { user: sanitizeUser(user), token }
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({ success: false, error: 'Email already in use' });
-    }
-    return next(error);
+    next(error);
   }
 };
 
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const user = await User.findOne({ email }).select('+password');
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Email and password are required' });
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password');
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'Invalid email or password' });
+    if (user.status === 'blocked') {
+      return res.status(403).json({ success: false, message: 'Your account is blocked' });
     }
 
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ success: false, error: 'Invalid email or password' });
-    }
+    const token = generateToken({ id: user._id, role: user.role });
 
-    const token = user.getAuthToken();
-
-    return res.json({
+    res.status(200).json({
       success: true,
       data: { user: sanitizeUser(user), token }
     });
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
 
+const getMe = async (req, res, next) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: { user: sanitizeUser(req.user) }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-const me = async (req, res) => {
-  return res.json({ success: true, data: { user: sanitizeUser(req.user) } });
+const updateSettings = async (req, res, next) => {
+  try {
+    const { name, email, mobile, password } = req.body;
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (mobile) user.mobile = mobile;
+    if (password) user.password = password;
+
+    if (req.file) {
+      user.image = `/public/uploads/${req.file.filename}`;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: { user: sanitizeUser(user) }
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {
   bootstrapAdmin,
   login,
-  me
+  getMe,
+  updateSettings
 };

@@ -24,5 +24,5 @@ npm run dev
 Set optional API URL in `.env`:
 
 ```bash
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=http://localhost:5001
 ```

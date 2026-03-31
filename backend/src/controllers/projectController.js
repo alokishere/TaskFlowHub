@@ -1,52 +1,134 @@
 const Project = require('../models/Project');
+const Task = require('../models/Task');
 const User = require('../models/User');
 
 const createProject = async (req, res, next) => {
   try {
-    const { title, description = '', assignedTo } = req.body;
-
-    if (!title || !assignedTo) {
-      return res.status(400).json({ success: false, error: 'Title and assigned employee are required' });
-    }
-
-    const employee = await User.findById(assignedTo);
-    if (!employee || employee.role !== 'employee') {
-      return res.status(400).json({ success: false, error: 'Assigned user must be an employee' });
-    }
+    const { title, description, deadline, assignments } = req.body;
+    // assignments: [{ userId, message }]
 
     const project = await Project.create({
-      title: title.trim(),
-      description: description.trim(),
-      assignedTo,
-      createdBy: req.user._id
+      title,
+      description,
+      deadline,
+      assignedTo: assignments ? assignments.map(a => a.userId) : []
     });
 
-    await project.populate('assignedTo', 'name email');
-    await project.populate('createdBy', 'name email');
+    if (assignments && assignments.length > 0) {
+      const tasks = assignments.map(a => ({
+        projectId: project._id,
+        assignedTo: a.userId,
+        title: `Task for ${project.title}`,
+        message: a.message,
+        status: 'pending'
+      }));
+      await Task.insertMany(tasks);
+    }
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: 'Project created',
-      data: { project }
+      data: project
     });
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
 
-const listProjects = async (req, res, next) => {
+const getAllProjects = async (req, res, next) => {
   try {
-    const query = req.user.role === 'admin' ? {} : { assignedTo: req.user._id };
-
-    const projects = await Project.find(query)
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 });
-
-    return res.json({ success: true, data: { projects } });
+    const projects = await Project.find().populate('assignedTo', 'name email image');
+    res.status(200).json({
+      success: true,
+      data: projects
+    });
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
 
-module.exports = { createProject, listProjects };
+const updateProjectStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    project.status = status;
+    await project.save();
+
+    res.status(200).json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getEmployeeProjects = async (req, res, next) => {
+  try {
+    const projects = await Project.find({ assignedTo: req.user.id });
+    
+    // For each project, also get the specific task message for this employee
+    const projectWithTasks = await Promise.all(projects.map(async (p) => {
+      const task = await Task.findOne({ projectId: p._id, assignedTo: req.user.id });
+      return {
+        ...p.toObject(),
+        taskMessage: task ? task.message : ''
+      };
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: projectWithTasks
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getEmployeeTasks = async (req, res, next) => {
+  try {
+    const tasks = await Task.find({ assignedTo: req.user.id }).populate('projectId', 'title');
+    res.status(200).json({
+      success: true,
+      data: tasks
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateTaskStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+    
+    if (task.assignedTo.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    task.status = status;
+    await task.save();
+
+    res.status(200).json({
+      success: true,
+      data: task
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  createProject,
+  getAllProjects,
+  updateProjectStatus,
+  getEmployeeProjects,
+  getEmployeeTasks,
+  updateTaskStatus
+};
