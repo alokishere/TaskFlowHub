@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const { getLocalDateString } = require('../utils/time');
+const { normalizeStoredPath } = require('../middleware/upload');
 
 const getTaskProgressPercent = (task) => {
   if (typeof task.progressPercent === 'number') {
@@ -48,6 +49,14 @@ const upsertTodayProgress = (task, percent, note = '') => {
 
   task.progressHistory = history.slice(-60);
 };
+
+const normalizeAssigneeImages = (assignees = []) => assignees.map((assignee) => {
+  const data = assignee.toObject ? assignee.toObject() : assignee;
+  return {
+    ...data,
+    image: normalizeStoredPath(data.image)
+  };
+});
 
 const createProject = async (req, res, next) => {
   try {
@@ -104,6 +113,7 @@ const getAllProjects = async (req, res, next) => {
 
       return {
         ...project.toObject(),
+        assignedTo: normalizeAssigneeImages(project.assignedTo),
         ...metrics
       };
     });
@@ -131,6 +141,7 @@ const getProjectById = async (req, res, next) => {
       success: true,
       data: {
         ...project.toObject(),
+        assignedTo: normalizeAssigneeImages(project.assignedTo),
         tasks,
         ...metrics
       }

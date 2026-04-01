@@ -7,7 +7,7 @@ import {
   CheckCircle2, AlertCircle, XCircle, TrendingUp, Calendar,
   ChevronLeft, ChevronRight, Timer
 } from 'lucide-react';
-import API from '../../services/api';
+import API, { imageBaseUrl } from '../../services/api';
 
 const EmployeeDetails = () => {
   const { id } = useParams();
@@ -207,7 +207,7 @@ const EmployeeDetails = () => {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm text-center">
             <div className="w-32 h-32 mx-auto bg-linear-to-br from-purple-50 to-blue-50 rounded-[2rem] mb-6 overflow-hidden border-4 border-white shadow-xl relative group">
-              {data.image ? <img src={`http://localhost:5001/${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110"/> : <span className="text-4xl font-black text-purple-600 leading-[8rem]">{data.name.charAt(0)}</span>}
+              {data.image ? <img src={`${imageBaseUrl}${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110"/> : <span className="text-4xl font-black text-purple-600 leading-[8rem]">{data.name.charAt(0)}</span>}
               <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white shadow-sm ${data.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             </div>
             <h3 className="text-xl font-black text-gray-900 mb-1">{data.name}</h3>
@@ -242,7 +242,7 @@ const EmployeeDetails = () => {
                     <span className="text-xs font-bold text-gray-700">{doc.docType}</span>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a href={`http://localhost:5001/${doc.fileUrl}`} target="_blank" className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl"><Download size={14}/></a>
+                    <a href={`${imageBaseUrl}${doc.fileUrl}`} target="_blank" className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl"><Download size={14}/></a>
                     <button onClick={() => deleteDoc(doc._id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl"><Trash2 size={14}/></button>
                   </div>
                 </div>

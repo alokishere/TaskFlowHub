@@ -3,7 +3,7 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const Leave = require('../models/Leave');
 const Attendance = require('../models/Attendance');
-const { deleteFile } = require('../middleware/upload');
+const { deleteFile, normalizeStoredPath, buildStoredUploadPath } = require('../middleware/upload');
 const bcrypt = require('bcryptjs');
 const {
   getLocalDateString,
@@ -18,7 +18,7 @@ const sanitizeUser = (user) => ({
   email: user.email,
   mobile: user.mobile,
   role: user.role,
-  image: user.image,
+  image: normalizeStoredPath(user.image),
   department: user.department,
   salary: user.salary,
   status: user.status,
@@ -86,7 +86,7 @@ const createEmployee = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
-    const image = req.file ? `public/uploads/${req.file.filename}` : '';
+    const image = req.file ? buildStoredUploadPath(req.file.filename) : '';
 
     const employee = await User.create({
       name, email, password, mobile, role, department, salary, image
@@ -146,7 +146,7 @@ const updateEmployee = async (req, res, next) => {
 
     if (req.file) {
       deleteFile(employee.image);
-      employee.image = `public/uploads/${req.file.filename}`;
+      employee.image = buildStoredUploadPath(req.file.filename);
     }
 
     await employee.save();

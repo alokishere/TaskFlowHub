@@ -1,4 +1,5 @@
 const Leave = require('../models/Leave');
+const { normalizeStoredPath } = require('../middleware/upload');
 
 const createLeaveRequest = async (req, res, next) => {
   try {
@@ -32,7 +33,14 @@ const getAllLeaves = async (req, res, next) => {
     if (status) query.status = status;
 
     const leaves = await Leave.find(query).populate('userId', 'name email image department').sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: leaves });
+    const normalizedLeaves = leaves.map((leave) => {
+      const data = leave.toObject();
+      if (data.userId?.image) {
+        data.userId.image = normalizeStoredPath(data.userId.image);
+      }
+      return data;
+    });
+    res.status(200).json({ success: true, data: normalizedLeaves });
   } catch (error) {
     next(error);
   }

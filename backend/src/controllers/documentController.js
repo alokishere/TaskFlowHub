@@ -1,5 +1,5 @@
 const Document = require('../models/Document');
-const { deleteFile } = require('../middleware/upload');
+const { deleteFile, normalizeStoredPath, buildStoredUploadPath } = require('../middleware/upload');
 
 const uploadDocument = async (req, res, next) => {
   try {
@@ -11,10 +11,12 @@ const uploadDocument = async (req, res, next) => {
     const document = await Document.create({
       employeeId,
       docType,
-      fileUrl: `public/uploads/${req.file.filename}`
+      fileUrl: buildStoredUploadPath(req.file.filename)
     });
 
-    res.status(201).json({ success: true, data: document });
+    const data = document.toObject();
+    data.fileUrl = normalizeStoredPath(data.fileUrl);
+    res.status(201).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -23,7 +25,12 @@ const uploadDocument = async (req, res, next) => {
 const getEmployeeDocuments = async (req, res, next) => {
   try {
     const documents = await Document.find({ employeeId: req.params.employeeId });
-    res.status(200).json({ success: true, data: documents });
+    const normalizedDocuments = documents.map((document) => {
+      const data = document.toObject();
+      data.fileUrl = normalizeStoredPath(data.fileUrl);
+      return data;
+    });
+    res.status(200).json({ success: true, data: normalizedDocuments });
   } catch (error) {
     next(error);
   }

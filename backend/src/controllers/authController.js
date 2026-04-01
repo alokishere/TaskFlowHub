@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { generateToken } = require('../utils/jwt');
+const { normalizeStoredPath, buildStoredUploadPath } = require('../middleware/upload');
 
 const sanitizeUser = (user) => ({
   id: user._id,
@@ -7,7 +8,7 @@ const sanitizeUser = (user) => ({
   email: user.email,
   mobile: user.mobile,
   role: user.role,
-  image: user.image,
+  image: normalizeStoredPath(user.image),
   department: user.department,
   salary: user.salary,
   status: user.status
@@ -117,7 +118,7 @@ const updateSettings = async (req, res, next) => {
     if (password) user.password = password;
 
     if (req.file) {
-      user.image = `/public/uploads/${req.file.filename}`;
+      user.image = buildStoredUploadPath(req.file.filename);
     }
 
     await user.save();

@@ -24,6 +24,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use('/uploads', express.static('public/uploads'));
 app.use('/public', express.static('public'));
 
 app.use('/api/auth', authRoutes);
