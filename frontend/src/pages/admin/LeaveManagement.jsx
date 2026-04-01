@@ -35,22 +35,22 @@ const LeaveManagement = () => {
 
   return (
     <Layout role="admin">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Leave Management</h2>
-          <p className="text-gray-500">Review and manage employee leave requests.</p>
+          <h2 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight">Leave Management</h2>
+          <p className="text-sm font-medium text-gray-500">Review and manage employee leave requests.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Filter size={20} className="text-gray-400" />
-          <div className="flex bg-gray-50 p-1 rounded-2xl">
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-4 md:p-8">
+        <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          <Filter size={18} className="text-gray-400 shrink-0" />
+          <div className="flex bg-gray-50 p-1.5 rounded-2xl shrink-0">
             {['pending', 'approved', 'rejected'].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatus(s)}
-                className={`px-6 py-2 rounded-xl text-sm font-bold capitalize transition-all ${
+                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                   status === s ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >

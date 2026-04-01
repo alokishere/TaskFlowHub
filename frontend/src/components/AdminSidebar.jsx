@@ -16,7 +16,7 @@ import {
   PlusSquare
 } from 'lucide-react';
 
-const AdminSidebar = () => {
+const AdminSidebar = ({ onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState({
@@ -32,6 +32,11 @@ const AdminSidebar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
+    onClose?.();
+  };
+
+  const handleNavClick = () => {
+    onClose?.();
   };
 
   const menuClass = (isActive) => 
@@ -49,7 +54,7 @@ const AdminSidebar = () => {
     }`;
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col p-6 fixed left-0 top-0 z-40 overflow-y-auto">
+    <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col p-6 overflow-y-auto">
       <div className="flex items-center gap-2 mb-10 px-2">
         <div className="w-10 h-10 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
           <span className="text-white font-black text-xl">S</span>
@@ -61,7 +66,7 @@ const AdminSidebar = () => {
       </div>
 
       <nav className="flex-1 space-y-1">
-        <NavLink to="/admin" end className={({ isActive }) => menuClass(isActive)}>
+        <NavLink to="/admin" end className={({ isActive }) => menuClass(isActive)} onClick={handleNavClick}>
           <LayoutDashboard size={20} />
           <span>Dashboard</span>
         </NavLink>
@@ -82,11 +87,11 @@ const AdminSidebar = () => {
           </button>
           
           <div className={`overflow-hidden transition-all duration-300 ${openMenus.employees ? 'max-h-40 mt-1' : 'max-h-0'}`}>
-            <NavLink to="/admin/employees" end className={({ isActive }) => subMenuClass(isActive)}>
+            <NavLink to="/admin/employees" end className={({ isActive }) => subMenuClass(isActive)} onClick={handleNavClick}>
               <List size={16} />
               <span>Employee List</span>
             </NavLink>
-            <NavLink to="/admin/employees/add" className={({ isActive }) => subMenuClass(isActive)}>
+            <NavLink to="/admin/employees/add" className={({ isActive }) => subMenuClass(isActive)} onClick={handleNavClick}>
               <UserPlus size={16} />
               <span>Add Employee</span>
             </NavLink>
@@ -109,38 +114,38 @@ const AdminSidebar = () => {
           </button>
           
           <div className={`overflow-hidden transition-all duration-300 ${openMenus.projects ? 'max-h-40 mt-1' : 'max-h-0'}`}>
-            <NavLink to="/admin/projects" end className={({ isActive }) => subMenuClass(isActive)}>
+            <NavLink to="/admin/projects" end className={({ isActive }) => subMenuClass(isActive)} onClick={handleNavClick}>
               <List size={16} />
               <span>Project List</span>
             </NavLink>
-            <NavLink to="/admin/projects/add" className={({ isActive }) => subMenuClass(isActive)}>
+            <NavLink to="/admin/projects/add" className={({ isActive }) => subMenuClass(isActive)} onClick={handleNavClick}>
               <PlusSquare size={16} />
               <span>Create Project</span>
             </NavLink>
           </div>
         </div>
 
-        <NavLink to="/admin/documents" className={({ isActive }) => menuClass(isActive)}>
+        <NavLink to="/admin/documents" className={({ isActive }) => menuClass(isActive)} onClick={handleNavClick}>
           <FileText size={20} />
           <span>Documents</span>
         </NavLink>
 
-        <NavLink to="/admin/salary" className={({ isActive }) => menuClass(isActive)}>
+        <NavLink to="/admin/salary" className={({ isActive }) => menuClass(isActive)} onClick={handleNavClick}>
           <DollarSign size={20} />
           <span>Salaries</span>
         </NavLink>
 
-        <NavLink to="/admin/leaves" className={({ isActive }) => menuClass(isActive)}>
+        <NavLink to="/admin/leaves" className={({ isActive }) => menuClass(isActive)} onClick={handleNavClick}>
           <FileText size={20} />
           <span>Leaves</span>
         </NavLink>
 
-        <NavLink to="/admin/messages" className={({ isActive }) => menuClass(isActive)}>
+        <NavLink to="/admin/messages" className={({ isActive }) => menuClass(isActive)} onClick={handleNavClick}>
           <MessageSquare size={20} />
           <span>Messages</span>
         </NavLink>
 
-        <NavLink to="/admin/settings" className={({ isActive }) => menuClass(isActive)}>
+        <NavLink to="/admin/settings" className={({ isActive }) => menuClass(isActive)} onClick={handleNavClick}>
           <Settings size={20} />
           <span>Settings</span>
         </NavLink>

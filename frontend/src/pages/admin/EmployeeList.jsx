@@ -47,44 +47,46 @@ const EmployeeList = () => {
 
   return (
     <Layout role="admin">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Employee Management</h2>
-          <p className="text-gray-500">Manage your workforce, view details, and onboard new staff.</p>
+          <h2 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight">Employee Management</h2>
+          <p className="text-sm font-medium text-gray-500">Manage your workforce, view details, and onboard new staff.</p>
         </div>
         <Link 
           to="/admin/employees/add"
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-purple-100"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-200 active:scale-95"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           Add Employee
         </Link>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-4 md:p-8">
+        <div className="flex flex-col lg:flex-row gap-4 mb-8">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search employees..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all"
+              placeholder="Search employees by name or email..."
+              className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 rounded-2xl border border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all font-medium text-sm shadow-inner"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <select 
-            className="px-4 py-3 bg-gray-50 rounded-xl border border-transparent outline-none min-w-50"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-          >
-            <option value="">All Departments</option>
-            <option value="Management">Management</option>
-            <option value="Operations">Operations</option>
-            <option value="IT">IT</option>
-            <option value="HR">HR</option>
-            <option value="Sales">Sales</option>
-          </select>
+          <div className="flex gap-2">
+            <select 
+              className="flex-1 lg:w-60 px-4 py-3.5 bg-gray-50/50 rounded-2xl border border-transparent outline-none font-bold text-sm text-gray-700 transition-all focus:bg-white focus:border-purple-200 shadow-inner"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              <option value="Management">Management</option>
+              <option value="Operations">Operations</option>
+              <option value="IT">IT</option>
+              <option value="HR">HR</option>
+              <option value="Sales">Sales</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

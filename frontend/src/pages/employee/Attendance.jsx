@@ -187,15 +187,20 @@ const Attendance = () => {
 
   return (
     <Layout role="employee">
-      <div className="mb-8">
-        <h2 className="text-3xl font-black text-gray-900">Attendance</h2>
-        <p className="text-gray-500">Punch in/out, track daily work hours, and monitor present/leave/weekend days on calendar.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Attendance</h2>
+          <p className="text-sm font-medium text-gray-500">Punch in/out and track your work hours.</p>
+        </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
-          <h3 className="text-6xl font-black text-gray-900">{now.toLocaleTimeString('en-US', { hour12: false })}</h3>
-          <p className="mt-2 text-sm font-medium text-gray-500">
+      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 rounded-[2.5rem] border border-gray-100 bg-white p-6 md:p-10 shadow-sm flex flex-col justify-center">
+          <div className="flex flex-col md:flex-row md:items-baseline gap-2 mb-8">
+            <h3 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter">{now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}</h3>
+            <span className="text-xl md:text-2xl font-bold text-purple-600 opacity-50">{now.toLocaleTimeString('en-US', { second: '2-digit' })}</span>
+          </div>
+          <p className="text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest mb-10">
             {now.toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
@@ -204,76 +209,74 @@ const Attendance = () => {
             })}
           </p>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={handlePunchIn}
               disabled={today?.punchIn}
-              className={`rounded-2xl border px-5 py-5 text-left transition ${
+              className={`rounded-2xl border px-6 py-6 text-left transition-all active:scale-95 flex flex-col gap-3 ${
                 today?.punchIn
-                  ? 'border-gray-100 bg-gray-50 text-gray-400'
-                  : 'border-green-100 bg-green-50 text-green-700 hover:bg-green-100'
+                  ? 'border-gray-50 bg-gray-50 text-gray-400'
+                  : 'border-purple-100 bg-purple-50 text-purple-700 hover:bg-purple-100 shadow-sm shadow-purple-100'
               }`}
             >
-              <div className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
-                <LogIn size={20} />
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+                <LogIn size={18} />
                 Punch In
               </div>
-              <p className="text-sm font-semibold">{today?.punchIn ? today.punchIn : 'Start your workday timer'}</p>
+              <p className="text-sm font-black">{today?.punchIn ? today.punchIn : 'Start Session'}</p>
             </button>
 
             <button
               onClick={handlePunchOut}
               disabled={!today?.punchIn || today?.punchOut}
-              className={`rounded-2xl border px-5 py-5 text-left transition ${
+              className={`rounded-2xl border px-6 py-6 text-left transition-all active:scale-95 flex flex-col gap-3 ${
                 today?.punchOut || !today?.punchIn
-                  ? 'border-gray-100 bg-gray-50 text-gray-400'
-                  : 'border-red-100 bg-red-50 text-red-700 hover:bg-red-100'
+                  ? 'border-gray-50 bg-gray-50 text-gray-400'
+                  : 'border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-sm shadow-indigo-100'
               }`}
             >
-              <div className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
-                <LogOut size={20} />
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+                <LogOut size={18} />
                 Punch Out
               </div>
-              <p className="text-sm font-semibold">{today?.punchOut ? today.punchOut : 'End shift and lock worked hours'}</p>
+              <p className="text-sm font-black">{today?.punchOut ? today.punchOut : 'End Session'}</p>
             </button>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-black text-gray-800">Overview</h3>
-          <div className="space-y-4">
-            <div className="rounded-2xl bg-blue-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-blue-500">Today Worked</p>
-              <p className="mt-1 text-2xl font-black text-blue-700">{formatDuration(getWorkedMinutes(today))}</p>
-            </div>
-            <div className="rounded-2xl bg-emerald-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-emerald-500">This Week</p>
-              <p className="mt-1 text-2xl font-black text-emerald-700">{formatDuration(weekWorkedMinutes)}</p>
-            </div>
-            <div className="rounded-2xl bg-violet-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-violet-500">Total Logged</p>
-              <p className="mt-1 text-2xl font-black text-violet-700">{formatDuration(totalWorkedMinutes)}</p>
-            </div>
+        <div className="rounded-[2.5rem] border border-gray-100 bg-white p-6 md:p-8 shadow-sm space-y-4">
+          <h3 className="text-lg font-black text-gray-800 mb-6">Overview</h3>
+          <div className="rounded-3xl bg-purple-50 p-6 border border-purple-100/50">
+            <p className="text-[10px] font-black uppercase tracking-widest text-purple-500 mb-1">Today Worked</p>
+            <p className="text-3xl font-black text-purple-700">{formatDuration(getWorkedMinutes(today))}</p>
+          </div>
+          <div className="rounded-3xl bg-indigo-50 p-6 border border-indigo-100/50">
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">This Week</p>
+            <p className="text-3xl font-black text-indigo-700">{formatDuration(weekWorkedMinutes)}</p>
+          </div>
+          <div className="rounded-3xl bg-gray-50 p-6 border border-gray-100">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Logged</p>
+            <p className="text-3xl font-black text-gray-700">{formatDuration(totalWorkedMinutes)}</p>
           </div>
         </div>
       </div>
 
-      <div className="mb-8 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-8 rounded-[2.5rem] border border-gray-100 bg-white p-4 md:p-8 shadow-sm overflow-hidden">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h3 className="text-lg font-black text-gray-800">Attendance Calendar</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl w-fit">
             <button
               onClick={() => {
                 const prev = new Date(selectedMonth);
                 prev.setMonth(prev.getMonth() - 1);
                 setSelectedMonth(new Date(prev.getFullYear(), prev.getMonth(), 1));
               }}
-              className="rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-50"
+              className="rounded-xl border border-gray-100 p-2 text-gray-400 hover:bg-white hover:text-purple-600 transition-all bg-white shadow-sm"
             >
               <ChevronLeft size={16} />
             </button>
-            <p className="min-w-40 text-center text-sm font-black text-gray-700">
-              {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            <p className="min-w-32 text-center text-xs font-black text-gray-700 uppercase tracking-widest">
+              {selectedMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </p>
             <button
               onClick={() => {
@@ -281,71 +284,82 @@ const Attendance = () => {
                 next.setMonth(next.getMonth() + 1);
                 setSelectedMonth(new Date(next.getFullYear(), next.getMonth(), 1));
               }}
-              className="rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-50"
+              className="rounded-xl border border-gray-100 p-2 text-gray-400 hover:bg-white hover:text-purple-600 transition-all bg-white shadow-sm"
             >
               <ChevronRight size={16} />
             </button>
           </div>
         </div>
 
-        <div className="mb-3 grid grid-cols-7 gap-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
-            <div key={dayName} className="text-center text-xs font-black uppercase tracking-widest text-gray-400">
-              {dayName}
+        <div className="overflow-x-auto pb-4 scrollbar-hide">
+          <div className="min-w-[600px]">
+            <div className="mb-4 grid grid-cols-7 gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
+                <div key={dayName} className="text-center text-[10px] font-black uppercase tracking-widest text-gray-300">
+                  {dayName}
+                </div>
+              ))}
             </div>
-          ))}
+
+            <div className="grid grid-cols-7 gap-2">
+              {calendarCells.map((cellDate, index) => {
+                if (!cellDate) return <div key={`empty-${index}`} className="h-16 md:h-20 rounded-2xl bg-gray-50/50" />;
+
+                const currentKey = dateKey(cellDate);
+                const record = attendanceMap[currentKey];
+                const isFuture = cellDate > now;
+                const isSunday = cellDate.getDay() === 0;
+                const isToday = currentKey === todayKey;
+                let type = 'absent';
+
+                if (isFuture) type = 'future';
+                else if (approvedLeaveDates.has(currentKey)) type = 'leave';
+                else if (isSunday) type = 'sunday';
+                else if (record?.status === 'present' || record?.status === 'late') type = 'present';
+
+                const typeClassMap = {
+                  present: 'border-emerald-100 bg-emerald-50 text-emerald-600',
+                  leave: 'border-purple-100 bg-purple-50 text-purple-600',
+                  sunday: 'border-amber-100 bg-amber-50 text-amber-600',
+                  absent: 'border-rose-100 bg-rose-50 text-rose-600',
+                  future: 'border-gray-50 bg-gray-50/50 text-gray-300'
+                };
+
+                const labelMap = {
+                  present: 'Present',
+                  leave: 'Leave',
+                  sunday: 'Sunday',
+                  absent: 'Absent',
+                  future: '--'
+                };
+
+                return (
+                  <div
+                    key={currentKey}
+                    className={`h-16 md:h-20 rounded-2xl border p-2 md:p-3 transition-all ${typeClassMap[type]} ${isToday ? 'ring-2 ring-purple-400 ring-offset-2' : ''}`}
+                  >
+                    <p className="text-right text-xs md:text-sm font-black">{cellDate.getDate()}</p>
+                    <p className="mt-1 text-[8px] md:text-[10px] font-black uppercase tracking-wider opacity-70">{labelMap[type]}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {calendarCells.map((cellDate, index) => {
-            if (!cellDate) return <div key={`empty-${index}`} className="h-20 rounded-xl bg-gray-50/40" />;
-
-            const currentKey = dateKey(cellDate);
-            const record = attendanceMap[currentKey];
-            const isFuture = cellDate > now;
-            const isSunday = cellDate.getDay() === 0;
-            const isToday = currentKey === todayKey;
-            let type = 'absent';
-
-            if (isFuture) type = 'future';
-            else if (approvedLeaveDates.has(currentKey)) type = 'leave';
-            else if (isSunday) type = 'sunday';
-            else if (record?.status === 'present' || record?.status === 'late') type = 'present';
-
-            const typeClassMap = {
-              present: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-              leave: 'border-violet-200 bg-violet-50 text-violet-700',
-              sunday: 'border-amber-200 bg-amber-50 text-amber-700',
-              absent: 'border-rose-200 bg-rose-50 text-rose-700',
-              future: 'border-gray-200 bg-gray-50 text-gray-400'
-            };
-
-            const labelMap = {
-              present: 'Present',
-              leave: 'Leave',
-              sunday: 'Sunday',
-              absent: 'Absent',
-              future: '--'
-            };
-
-            return (
-              <div
-                key={currentKey}
-                className={`h-20 rounded-xl border p-2 ${typeClassMap[type]} ${isToday ? 'ring-2 ring-blue-400' : ''}`}
-              >
-                <p className="text-right text-sm font-black">{cellDate.getDate()}</p>
-                <p className="mt-1 text-[10px] font-black uppercase tracking-wider">{labelMap[type]}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-3 text-xs font-bold">
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700"><CircleCheck size={12} /> Present</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-3 py-1 text-violet-700"><Calendar size={12} /> Leave</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700"><CircleOff size={12} /> Sunday</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-rose-700"><Clock size={12} /> Absent</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-blue-700"><Timer size={12} /> Today</span>
+        <div className="mt-8 flex flex-wrap gap-2 md:gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Present
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Leave
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Sunday
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Absent
+          </div>
         </div>
       </div>
 

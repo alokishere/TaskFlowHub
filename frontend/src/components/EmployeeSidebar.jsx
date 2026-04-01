@@ -12,13 +12,18 @@ import {
   MessageSquare
 } from 'lucide-react';
 
-const EmployeeSidebar = () => {
+const EmployeeSidebar = ({ onClose }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
+    onClose?.();
+  };
+
+  const handleNavClick = () => {
+    onClose?.();
   };
 
   const navItems = [
@@ -33,25 +38,29 @@ const EmployeeSidebar = () => {
   ];
 
   return (
-    <div className="w-64 h-screen bg-gray-900 flex flex-col p-6 fixed left-0 top-0 text-white">
+    <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col p-6 overflow-y-auto">
       <div className="flex items-center gap-2 mb-10 px-2">
-        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-xs">EMS</span>
+        <div className="w-10 h-10 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
+          <span className="text-white font-black text-xl">S</span>
         </div>
-        <h1 className="text-xl font-bold">TASKFLOW</h1>
+        <div>
+          <h1 className="text-lg font-black text-gray-800 leading-tight">SARATHI</h1>
+          <p className="text-[10px] font-bold text-gray-400 tracking-tighter uppercase">India Pvt. Ltd.</p>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
             end={item.path === '/employee'}
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive 
-                  ? 'bg-blue-600 text-white font-medium shadow-lg shadow-blue-500/20' 
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  ? 'bg-purple-50 text-purple-600 font-bold shadow-sm shadow-purple-100/50' 
+                  : 'text-gray-500 hover:bg-gray-50 font-medium'
               }`
             }
           >
@@ -61,13 +70,15 @@ const EmployeeSidebar = () => {
         ))}
       </nav>
 
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-900/20 rounded-xl transition-all mt-auto"
-      >
-        <LogOut size={20} />
-        <span>Log Out</span>
-      </button>
+      <div className="pt-6 mt-6 border-t border-gray-50">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-all font-bold"
+        >
+          <LogOut size={20} />
+          <span>Log Out</span>
+        </button>
+      </div>
     </div>
   );
 };

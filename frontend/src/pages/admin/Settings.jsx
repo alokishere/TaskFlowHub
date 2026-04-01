@@ -48,91 +48,89 @@ const Settings = () => {
 
   return (
     <Layout role="admin">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Account Settings</h2>
-          <p className="text-gray-500">Update your personal information and security settings.</p>
-        </div>
+      <div className="mb-10">
+        <h2 className="text-2xl md:text-3xl font-black text-gray-800 tracking-tight">Account Settings</h2>
+        <p className="text-sm font-medium text-gray-500">Update your personal information and security settings.</p>
       </div>
 
-      <div className="max-w-2xl">
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-8">
+      <div className="max-w-2xl mx-auto lg:mx-0">
+        <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-6 md:p-10 space-y-10">
           {success && (
-            <div className="bg-green-50 text-green-600 p-4 rounded-xl flex items-center gap-3 font-bold text-sm">
-              <CheckCircle size={20} />
+            <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl flex items-center gap-3 font-black text-xs uppercase tracking-widest border border-emerald-100 shadow-sm animate-bounce">
+              <CheckCircle size={18} />
               Profile updated successfully!
             </div>
           )}
 
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-purple-100 rounded-3xl flex items-center justify-center text-purple-600 text-3xl font-bold border-4 border-white shadow-lg overflow-hidden relative group">
+          <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-gray-50/50 rounded-[2rem] border border-gray-100/50">
+            <div className="w-24 h-24 bg-purple-100 rounded-[1.5rem] flex items-center justify-center text-purple-600 text-3xl font-black border-4 border-white shadow-xl overflow-hidden relative group shrink-0">
               {image ? (
                 <img src={URL.createObjectURL(image)} alt="" className="w-full h-full object-cover" />
               ) : user.image ? (
                 <img src={`${imageBaseUrl}${user.image}`} alt="" className="w-full h-full object-cover" />
               ) : user.name.charAt(0)}
-              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer">
+              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-xs">
                 <Upload className="text-white" size={24} />
                 <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
               </label>
             </div>
-            <div>
-              <h4 className="text-lg font-bold text-gray-900">{user.name}</h4>
-              <p className="text-sm text-gray-500 uppercase tracking-wider font-bold">{user.role}</p>
+            <div className="text-center sm:text-left">
+              <h4 className="text-xl font-black text-gray-900 tracking-tight">{user.name}</h4>
+              <p className="text-[10px] text-purple-600 uppercase tracking-[0.2em] font-black mt-1">{user.role}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Full Name</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
                   name="name"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border"
+                  className="w-full pl-12 pr-6 py-4 bg-gray-50/50 rounded-2xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border font-bold text-sm shadow-inner"
                   value={formData.name}
                   onChange={handleChange}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="email"
                   name="email"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border"
+                  className="w-full pl-12 pr-6 py-4 bg-gray-50/50 rounded-2xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border font-bold text-sm shadow-inner"
                   value={formData.email}
                   onChange={handleChange}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">Mobile Number</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Mobile Number</label>
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
                   name="mobile"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border"
+                  className="w-full pl-12 pr-6 py-4 bg-gray-50/50 rounded-2xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border font-bold text-sm shadow-inner"
                   value={formData.mobile}
                   onChange={handleChange}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">New Password</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">New Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="password"
                   name="password"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border"
+                  className="w-full pl-12 pr-6 py-4 bg-gray-50/50 rounded-2xl border-transparent focus:bg-white focus:border-purple-200 outline-none transition-all border font-bold text-sm shadow-inner"
                   placeholder="Leave blank to keep current"
                   value={formData.password}
                   onChange={handleChange}
@@ -144,7 +142,7 @@ const Settings = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-purple-100 disabled:opacity-70"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-widest py-5 rounded-[1.5rem] transition-all shadow-lg shadow-purple-200 disabled:opacity-70 active:scale-95"
           >
             {loading ? 'Saving Changes...' : 'Update Profile'}
           </button>

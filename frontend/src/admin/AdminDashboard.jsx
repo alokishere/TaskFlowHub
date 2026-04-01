@@ -46,13 +46,14 @@ const AdminDashboard = () => {
 
   return (
     <Layout role="admin">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Welcome, {user.name}</h2>
-          <p className="text-gray-500">Here's what's happening at Sarathi India today.</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">Welcome, {user.name}</h2>
+          <p className="text-sm text-gray-500">Here's what's happening at Sarathi India today.</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        <div className="sm:text-right bg-white/50 px-4 py-2 rounded-2xl border border-gray-100/50 backdrop-blur-sm">
+          <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</p>
+          <p className="text-sm font-black text-gray-800">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 

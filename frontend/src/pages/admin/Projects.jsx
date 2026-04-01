@@ -60,21 +60,21 @@ const Projects = () => {
 
   return (
     <Layout role="admin">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
         <div>
-          <h2 className="text-3xl font-black text-gray-800">Project Engine</h2>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Track execution and team performance</p>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-800 tracking-tight">Project Engine</h2>
+          <p className="text-sm font-medium text-gray-500">Track execution and team performance</p>
         </div>
         <Link 
           to="/admin/projects/add"
-          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-purple-100 flex items-center gap-3"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-3 active:scale-95"
         >
           <Plus size={18} />
           Create New Project
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
         {projects.map((project) => (
           <div key={project._id} className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 flex flex-col hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-500 relative">
             <div className="flex justify-between items-start mb-6">
