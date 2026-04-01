@@ -59,9 +59,9 @@ const Messages = () => {
 
   return (
     <Layout role={user.role}>
-      <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] bg-white rounded-3xl border border-gray-100 shadow-sm flex overflow-hidden relative">
+      <div className="relative flex min-h-full flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm md:flex-row">
         {/* Conversations List */}
-        <div className={`w-full md:w-80 border-r border-gray-50 flex flex-col ${showChatOnMobile && selectedEmp ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full min-h-0 border-r border-gray-50 md:w-[21rem] lg:w-[23rem] flex flex-col ${showChatOnMobile && selectedEmp ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-6 border-b border-gray-50">
             <h3 className="text-lg font-black text-gray-800 tracking-tight">
               {user.role === 'admin' ? 'Employees' : 'Administrators'}
@@ -92,10 +92,10 @@ const Messages = () => {
         </div>
 
         {/* Chat Area */}
-        <div className={`flex-1 flex flex-col bg-gray-50/30 ${!showChatOnMobile || !selectedEmp ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`md:flex-1 flex min-h-0 min-w-0 flex-col bg-gray-50/30 ${!showChatOnMobile || !selectedEmp ? 'hidden md:flex' : 'flex'}`}>
           {selectedEmp ? (
             <>
-              <div className="p-4 md:p-6 bg-white border-b border-gray-50 flex items-center gap-3">
+              <div className="p-4 md:p-6 bg-white border-b border-gray-50 flex items-center gap-3 shrink-0">
                 <button 
                   onClick={() => setShowChatOnMobile(false)}
                   className="md:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
@@ -110,31 +110,33 @@ const Messages = () => {
                   <span className="text-[10px] text-green-500 font-black flex items-center gap-1 mt-1 uppercase tracking-widest"><div className="w-1.5 h-1.5 bg-green-500 rounded-full"/> Online</span>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-                {messages.map(m => (
-                  <div key={m._id} className={`flex ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] md:max-w-[70%] p-4 rounded-[1.5rem] text-sm font-medium shadow-sm ${m.senderId === user.id ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
-                      {m.message}
-                      <p className={`text-[10px] mt-1 opacity-50 flex items-center gap-1 ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}><Clock size={10}/> {new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+                <div className="flex min-h-full flex-col justify-end gap-4">
+                  {messages.map(m => (
+                    <div key={m._id} className={`flex ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[88%] break-words rounded-3xl p-3 text-sm font-medium shadow-sm md:max-w-[74%] md:p-4 ${m.senderId === user.id ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
+                        {m.message}
+                        <p className={`text-[10px] mt-1 opacity-50 flex items-center gap-1 ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}><Clock size={10}/> {new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div ref={chatEndRef}/>
+                  ))}
+                  <div ref={chatEndRef}/>
+                </div>
               </div>
-              <form onSubmit={handleSend} className="p-4 md:p-6 bg-white border-t border-gray-50">
+              <form onSubmit={handleSend} className="border-t border-gray-50 bg-white p-3 shrink-0 sm:p-4 md:p-5 lg:p-6">
                 <div className="relative">
                   <input 
                     type="text" 
                     placeholder="Type your message..." 
-                    className="w-full pl-6 pr-16 py-4 bg-gray-50 border-transparent rounded-[1.5rem] focus:bg-white focus:border-purple-200 border outline-none font-bold text-sm transition-all shadow-inner" 
+                    className="w-full rounded-3xl border border-transparent bg-gray-50 py-3.5 pl-5 pr-14 text-sm font-bold shadow-inner outline-none transition-all focus:border-purple-200 focus:bg-white sm:pl-6 sm:pr-16 sm:py-4" 
                     value={newMessage} 
                     onChange={e => setNewMessage(e.target.value)} 
                   />
                   <button 
                     type="submit" 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-200"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-purple-600 p-2.5 text-white shadow-lg shadow-purple-200 transition-all hover:bg-purple-700 sm:p-3"
                   >
-                    <Send size={18} />
+                    <Send size={16} />
                   </button>
                 </div>
               </form>
@@ -153,4 +155,3 @@ const Messages = () => {
 };
 
 export default Messages;
-

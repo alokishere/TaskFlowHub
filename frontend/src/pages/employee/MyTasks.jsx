@@ -77,64 +77,55 @@ const MyTasks = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-emerald-500/20 text-emerald-300';
-      case 'testing':
-        return 'bg-violet-500/20 text-violet-300';
-      case 'in-progress':
-        return 'bg-cyan-500/20 text-cyan-300';
-      default:
-        return 'bg-slate-500/20 text-slate-300';
-    }
+    return 'bg-purple-100 text-purple-700';
   };
 
   return (
     <Layout role="employee">
-      <div className="mb-8">
-        <h2 className="text-3xl font-black text-white">My Tasks</h2>
-        <p className="mt-1 text-gray-400">Drag progress, add a short daily note, and save your update for admin visibility.</p>
+      <div className="mb-8 max-w-4xl space-y-2">
+        <h2 className="text-3xl font-black text-slate-900">My Tasks</h2>
+        <p className="mt-1 text-slate-600">Drag progress, add a short daily note, and save your update for admin visibility.</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {tasks.map((task) => {
           const taskProgress = typeof task.progressPercent === 'number'
             ? task.progressPercent
             : (task.status === 'completed' ? 100 : 0);
           const todayUpdate = task.progressHistory?.find((entry) => entry.date === todayKey);
           return (
-            <div key={task._id} className="rounded-3xl border border-slate-700/80 bg-slate-900 p-6 shadow-xl">
-              <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div key={task._id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="flex-1">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-black text-white">{task.projectId?.title || 'Project Task'}</h3>
+                    <h3 className="text-lg font-black text-slate-900">{task.projectId?.title || 'Project Task'}</h3>
                     <span className={`rounded-md px-2 py-1 text-[10px] font-black uppercase ${getStatusColor(task.status)}`}>
                       {task.status}
                     </span>
                     <span className={`rounded-md px-2 py-1 text-[10px] font-black uppercase ${
                       task.acceptanceStatus === 'accepted'
-                        ? 'bg-emerald-500/20 text-emerald-300'
+                        ? 'bg-purple-100 text-purple-700'
                         : task.acceptanceStatus === 'rejected'
-                          ? 'bg-rose-500/20 text-rose-300'
-                          : 'bg-amber-500/20 text-amber-300'
+                          ? 'bg-rose-100 text-rose-700'
+                          : 'bg-amber-100 text-amber-700'
                     }`}>
                       {task.acceptanceStatus}
                     </span>
                   </div>
-                  <p className="mb-4 text-sm text-slate-300">{task.message}</p>
+                  <p className="mb-4 text-sm text-slate-700">{task.message}</p>
 
                   {task.acceptanceStatus === 'pending' && (
                     <div className="mb-4 flex gap-3">
                       <button
                         onClick={() => respondToAssignment(task._id, 'accepted')}
-                        className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
+                        className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-700"
                       >
                         <Check size={14} />
                         Accept Project
                       </button>
                       <button
                         onClick={() => respondToAssignment(task._id, 'rejected')}
-                        className="flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-700"
+                        className="flex items-center gap-2 rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-300"
                       >
                         <X size={14} />
                         Reject
@@ -144,7 +135,7 @@ const MyTasks = () => {
                 </div>
 
                 {task.acceptanceStatus === 'accepted' && (
-                  <div className="w-full space-y-3 md:w-[27rem]">
+                  <div className="w-full space-y-3 md:w-96">
                     <div className="flex flex-wrap gap-2">
                       {['pending', 'in-progress', 'testing', 'completed'].map((status) => (
                         <button
@@ -152,8 +143,8 @@ const MyTasks = () => {
                           onClick={() => updateStatus(task._id, status)}
                           className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase transition ${
                             task.status === status
-                              ? 'bg-cyan-500 text-slate-950'
-                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                           }`}
                         >
                           {status}
@@ -161,13 +152,13 @@ const MyTasks = () => {
                       ))}
                     </div>
 
-                    <div className="rounded-xl border border-cyan-900/40 bg-cyan-500/5 p-4">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                       <div className="mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-cyan-200">
+                        <div className="flex items-center gap-2 text-purple-700">
                           <Gauge size={14} />
-                          <span className="text-xs font-black uppercase tracking-wide">Progress</span>
+                          <span className="text-xs font-black uppercase tracking-wide text-slate-700">Progress</span>
                         </div>
-                        <span className="text-sm font-black text-cyan-300">{progressDrafts[task._id] ?? taskProgress}%</span>
+                        <span className="text-sm font-black text-slate-900">{progressDrafts[task._id] ?? taskProgress}%</span>
                       </div>
                       <input
                         type="range"
@@ -180,7 +171,7 @@ const MyTasks = () => {
                             [task._id]: Number(event.target.value)
                           }));
                         }}
-                        className="h-2 w-full cursor-pointer appearance-none rounded bg-slate-700 accent-cyan-400"
+                        className="h-2 w-full cursor-pointer appearance-none rounded bg-slate-200 accent-purple-500"
                       />
                       <textarea
                         rows={2}
@@ -192,7 +183,7 @@ const MyTasks = () => {
                           }));
                         }}
                         placeholder="Write a short update for today..."
-                        className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-sm text-slate-200 outline-none focus:border-cyan-500"
+                        className="mt-3 w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-900 outline-none focus:border-purple-500"
                       />
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <p className="inline-flex items-center gap-1 text-xs text-slate-400">
@@ -202,7 +193,7 @@ const MyTasks = () => {
                         <button
                           onClick={() => updateTaskProgress(task._id)}
                           disabled={savingTaskId === task._id}
-                          className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-3 py-2 text-[11px] font-black uppercase text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-[11px] font-black uppercase text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
                         >
                           <Save size={12} />
                           {savingTaskId === task._id ? 'Saving...' : 'Update'}
@@ -217,9 +208,9 @@ const MyTasks = () => {
         })}
 
         {!loading && tasks.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900 py-20 text-center">
-            <ListTodo size={48} className="mx-auto mb-4 text-slate-700" />
-            <h3 className="text-lg font-bold text-slate-400">No tasks assigned yet</h3>
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center">
+            <ListTodo size={48} className="mx-auto mb-4 text-slate-400" />
+            <h3 className="text-lg font-bold text-slate-700">No tasks assigned yet</h3>
           </div>
         )}
       </div>

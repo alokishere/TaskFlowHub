@@ -44,8 +44,8 @@ const Layout = ({ children, role }) => {
           </button>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col">
             {children}
           </div>
         </main>
