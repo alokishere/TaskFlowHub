@@ -126,6 +126,10 @@ const Projects = () => {
                 </div>
                 <div className="text-purple-600">{project.completedTasks}/{project.taskCount} Tasks Done</div>
               </div>
+              <div className="mt-2 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                <span className="text-gray-400">Today Updates</span>
+                <span className="text-blue-600">{project.todayUpdates || 0}</span>
+              </div>
             </div>
             
             <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-50">

@@ -1,9 +1,16 @@
 const User = require('../models/User');
 const Project = require('../models/Project');
+const Task = require('../models/Task');
 const Leave = require('../models/Leave');
 const Attendance = require('../models/Attendance');
 const { deleteFile } = require('../middleware/upload');
 const bcrypt = require('bcryptjs');
+const {
+  getLocalDateString,
+  getLocalTimeString,
+  calculateWorkedMinutes,
+  formatWorkedDuration
+} = require('../utils/time');
 
 const sanitizeUser = (user) => ({
   id: user._id,
@@ -18,10 +25,39 @@ const sanitizeUser = (user) => ({
   createdAt: user.createdAt
 });
 
+const serializeAttendance = (entry) => {
+  const data = entry.toObject ? entry.toObject() : entry;
+  const today = getLocalDateString();
+  const isToday = data.date === today;
+  const hasCompletedShift = Boolean(data.punchIn && data.punchOut);
+
+  let workedMinutes = Number(data.workedMinutes) || 0;
+  if (hasCompletedShift && workedMinutes === 0) {
+    workedMinutes = calculateWorkedMinutes(data.punchIn, data.punchOut);
+  }
+  if (!hasCompletedShift && isToday && data.punchIn) {
+    workedMinutes = calculateWorkedMinutes(data.punchIn, getLocalTimeString());
+  }
+
+  return {
+    ...data,
+    workedMinutes,
+    workedDuration: formatWorkedDuration(workedMinutes)
+  };
+};
+
 const getAllEmployees = async (req, res, next) => {
   try {
     const { search, role, department } = req.query;
-    const query = { role: { $ne: 'admin' } };
+    let query = {};
+
+    if (req.user.role === 'admin') {
+      // Admin sees everyone except themselves (or just non-admins)
+      query = { role: { $ne: 'admin' } };
+    } else {
+      // Employee sees only admins for messaging
+      query = { role: 'admin' };
+    }
 
     if (search) {
       query.$or = [
@@ -29,7 +65,7 @@ const getAllEmployees = async (req, res, next) => {
         { email: { $regex: search, $options: 'i' } }
       ];
     }
-    if (role) query.role = role;
+    if (role && req.user.role === 'admin') query.role = role;
     if (department) query.department = department;
 
     const employees = await User.find(query).sort({ createdAt: -1 });
@@ -85,7 +121,7 @@ const getEmployeeById = async (req, res, next) => {
         projects,
         tasks,
         leaves,
-        attendance
+        attendance: attendance.map(serializeAttendance)
       }
     });
   } catch (error) {

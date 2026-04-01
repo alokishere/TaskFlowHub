@@ -1,9 +1,38 @@
 const Attendance = require('../models/Attendance');
+const {
+  getLocalDateString,
+  getLocalTimeString,
+  calculateWorkedMinutes,
+  formatWorkedDuration
+} = require('../utils/time');
+
+const serializeAttendance = (entry) => {
+  const data = entry.toObject ? entry.toObject() : entry;
+  const today = getLocalDateString();
+  const isToday = data.date === today;
+  const hasCompletedShift = Boolean(data.punchIn && data.punchOut);
+
+  let workedMinutes = Number(data.workedMinutes) || 0;
+
+  if (hasCompletedShift && workedMinutes === 0) {
+    workedMinutes = calculateWorkedMinutes(data.punchIn, data.punchOut);
+  }
+
+  if (!hasCompletedShift && isToday && data.punchIn) {
+    workedMinutes = calculateWorkedMinutes(data.punchIn, getLocalTimeString());
+  }
+
+  return {
+    ...data,
+    workedMinutes,
+    workedDuration: formatWorkedDuration(workedMinutes)
+  };
+};
 
 const punchIn = async (req, res, next) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const punchTime = new Date().toLocaleTimeString('en-GB'); // HH:MM:SS
+    const today = getLocalDateString();
+    const punchTime = getLocalTimeString();
 
     let attendance = await Attendance.findOne({ userId: req.user.id, date: today });
 
@@ -16,15 +45,18 @@ const punchIn = async (req, res, next) => {
         userId: req.user.id,
         date: today,
         punchIn: punchTime,
-        status: 'present'
+        status: 'present',
+        workedMinutes: 0
       });
     } else {
       attendance.punchIn = punchTime;
+      attendance.punchOut = null;
       attendance.status = 'present';
+      attendance.workedMinutes = 0;
     }
 
     await attendance.save();
-    res.status(200).json({ success: true, data: attendance });
+    res.status(200).json({ success: true, data: serializeAttendance(attendance) });
   } catch (error) {
     next(error);
   }
@@ -32,8 +64,8 @@ const punchIn = async (req, res, next) => {
 
 const punchOut = async (req, res, next) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const punchTime = new Date().toLocaleTimeString('en-GB');
+    const today = getLocalDateString();
+    const punchTime = getLocalTimeString();
 
     const attendance = await Attendance.findOne({ userId: req.user.id, date: today });
 
@@ -46,8 +78,9 @@ const punchOut = async (req, res, next) => {
     }
 
     attendance.punchOut = punchTime;
+    attendance.workedMinutes = calculateWorkedMinutes(attendance.punchIn, punchTime);
     await attendance.save();
-    res.status(200).json({ success: true, data: attendance });
+    res.status(200).json({ success: true, data: serializeAttendance(attendance) });
   } catch (error) {
     next(error);
   }
@@ -56,7 +89,7 @@ const punchOut = async (req, res, next) => {
 const getMyAttendance = async (req, res, next) => {
   try {
     const history = await Attendance.find({ userId: req.user.id }).sort({ date: -1 });
-    res.status(200).json({ success: true, data: history });
+    res.status(200).json({ success: true, data: history.map(serializeAttendance) });
   } catch (error) {
     next(error);
   }
@@ -65,7 +98,7 @@ const getMyAttendance = async (req, res, next) => {
 const getAllAttendance = async (req, res, next) => {
   try {
     const attendance = await Attendance.find().populate('userId', 'name email').sort({ date: -1 });
-    res.status(200).json({ success: true, data: attendance });
+    res.status(200).json({ success: true, data: attendance.map(serializeAttendance) });
   } catch (error) {
     next(error);
   }

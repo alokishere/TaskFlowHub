@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { 
-  ArrowLeft, User, Briefcase, FileText, Clock, Shield, 
+  ArrowLeft, Briefcase, FileText,
   Trash2, Lock, Unlock, Key, Upload, File, Download,
-  CheckCircle2, AlertCircle, XCircle, TrendingUp, Calendar
+  CheckCircle2, AlertCircle, XCircle, TrendingUp, Calendar,
+  ChevronLeft, ChevronRight, Timer
 } from 'lucide-react';
 import API from '../../services/api';
 
@@ -17,6 +18,10 @@ const EmployeeDetails = () => {
   const [showPassModal, setShowPassModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [attendanceMonth, setAttendanceMonth] = useState(() => {
+    const current = new Date();
+    return new Date(current.getFullYear(), current.getMonth(), 1);
+  });
 
   const fetchData = async () => {
     try {
@@ -93,6 +98,89 @@ const EmployeeDetails = () => {
     return Math.round((completed / data.tasks.length) * 100);
   };
 
+  const dateKey = (date) => date.toLocaleDateString('en-CA');
+  const toDateOnly = (value) => {
+    const raw = String(value || '').split('T')[0];
+    return new Date(`${raw}T00:00:00`);
+  };
+  const parseTimeToMinutes = (time) => {
+    if (!time) return null;
+    const [hours, minutes, seconds = '0'] = String(time).split(':');
+    const hh = Number(hours);
+    const mm = Number(minutes);
+    const ss = Number(seconds);
+    if ([hh, mm, ss].some((part) => Number.isNaN(part))) return null;
+    return (hh * 60) + mm + (ss / 60);
+  };
+  const calculateWorkedMinutes = (record) => {
+    if (!record?.punchIn || !record?.punchOut) return Number(record?.workedMinutes) || 0;
+    const inMinutes = parseTimeToMinutes(record.punchIn);
+    const outMinutes = parseTimeToMinutes(record.punchOut);
+    if (inMinutes === null || outMinutes === null) return Number(record?.workedMinutes) || 0;
+
+    let diff = outMinutes - inMinutes;
+    if (diff < 0) diff += 24 * 60;
+    return Math.max(0, Math.round(diff));
+  };
+  const formatDuration = (minutes) => {
+    const safeMinutes = Math.max(0, Math.round(minutes || 0));
+    const hrs = Math.floor(safeMinutes / 60);
+    const mins = safeMinutes % 60;
+    return `${hrs}h ${mins}m`;
+  };
+
+  const attendanceMap = useMemo(() => {
+    const map = {};
+    (data?.attendance || []).forEach((entry) => {
+      map[entry.date] = entry;
+    });
+    return map;
+  }, [data?.attendance]);
+
+  const approvedLeaveDates = useMemo(() => {
+    const set = new Set();
+    (data?.leaves || [])
+      .filter((leave) => leave.status === 'approved')
+      .forEach((leave) => {
+        const start = toDateOnly(leave.from);
+        const end = toDateOnly(leave.to);
+        for (let current = new Date(start); current <= end; current.setDate(current.getDate() + 1)) {
+          set.add(dateKey(current));
+        }
+      });
+    return set;
+  }, [data?.leaves]);
+
+  const attendanceCalendarCells = useMemo(() => {
+    const year = attendanceMonth.getFullYear();
+    const month = attendanceMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const firstWeekday = firstDay.getDay();
+    const cells = [];
+
+    for (let i = 0; i < firstWeekday; i += 1) cells.push(null);
+    for (let day = 1; day <= totalDays; day += 1) cells.push(new Date(year, month, day));
+    return cells;
+  }, [attendanceMonth]);
+
+  const attendanceSummary = useMemo(() => {
+    const attendance = data?.attendance || [];
+    const totalWorkedMinutes = attendance.reduce((sum, entry) => sum + calculateWorkedMinutes(entry), 0);
+    const presentDays = attendance.filter((entry) => entry.status === 'present' || entry.status === 'late').length;
+    return {
+      totalWorkedMinutes,
+      presentDays
+    };
+  }, [data?.attendance]);
+
+  const attendanceRate = useMemo(() => {
+    const attendance = data?.attendance || [];
+    if (attendance.length === 0) return 0;
+    const presentDays = attendance.filter((entry) => entry.status === 'present' || entry.status === 'late').length;
+    return Math.round((presentDays / attendance.length) * 100);
+  }, [data?.attendance]);
+
   if (loading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div></Layout>;
   if (!data) return <Layout role="admin">Not found</Layout>;
 
@@ -118,7 +206,7 @@ const EmployeeDetails = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm text-center">
-            <div className="w-32 h-32 mx-auto bg-gradient-to-br from-purple-50 to-blue-50 rounded-[2rem] mb-6 overflow-hidden border-4 border-white shadow-xl relative group">
+            <div className="w-32 h-32 mx-auto bg-linear-to-br from-purple-50 to-blue-50 rounded-[2rem] mb-6 overflow-hidden border-4 border-white shadow-xl relative group">
               {data.image ? <img src={`http://localhost:5001/${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110"/> : <span className="text-4xl font-black text-purple-600 leading-[8rem]">{data.name.charAt(0)}</span>}
               <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white shadow-sm ${data.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             </div>
@@ -189,7 +277,7 @@ const EmployeeDetails = () => {
                   <span className="text-2xl font-black text-purple-600">{calculateProgress()}%</span>
                 </div>
                 <div className="h-4 bg-gray-100 rounded-full overflow-hidden mb-6 shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-1000 ease-out" style={{ width: `${calculateProgress()}%` }}></div>
+                  <div className="h-full bg-linear-to-r from-purple-500 to-blue-500 transition-all duration-1000 ease-out" style={{ width: `${calculateProgress()}%` }}></div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
@@ -220,7 +308,7 @@ const EmployeeDetails = () => {
                   </div>
                   <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl">
                     <span className="text-xs font-bold text-gray-500">Attendance Rate</span>
-                    <span className="text-sm font-black text-gray-800">92%</span>
+                    <span className="text-sm font-black text-gray-800">{attendanceRate}%</span>
                   </div>
                 </div>
               </div>
@@ -246,30 +334,119 @@ const EmployeeDetails = () => {
           )}
 
           {activeTab === 'attendance' && (
-            <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      <th className="pb-4 px-4">Date</th>
-                      <th className="pb-4 px-4">Check In</th>
-                      <th className="pb-4 px-4">Check Out</th>
-                      <th className="pb-4 px-4 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {data.attendance?.map(a => (
-                      <tr key={a._id} className="group hover:bg-gray-50/30 transition-colors">
-                        <td className="py-4 px-4 text-sm font-black text-gray-700">{new Date(a.date).toLocaleDateString()}</td>
-                        <td className="py-4 px-4 text-sm font-bold text-gray-500">{a.punchIn || '--:--'}</td>
-                        <td className="py-4 px-4 text-sm font-bold text-gray-500">{a.punchOut || '--:--'}</td>
-                        <td className="py-4 px-4 text-right">
-                          <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${a.status === 'present' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{a.status}</span>
-                        </td>
-                      </tr>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                  <h4 className="font-black text-gray-800 mb-6 flex items-center gap-2">
+                    <Timer size={18} className="text-blue-600" />
+                    Hours Summary
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-blue-50">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Total Worked</p>
+                      <p className="text-2xl font-black text-blue-700 mt-1">{formatDuration(attendanceSummary.totalWorkedMinutes)}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-emerald-50">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Days Present</p>
+                      <p className="text-2xl font-black text-emerald-700 mt-1">{attendanceSummary.presentDays}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className="font-black text-gray-800 flex items-center gap-2">
+                      <Calendar size={18} className="text-purple-600" />
+                      Attendance Calendar
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const prev = new Date(attendanceMonth);
+                          prev.setMonth(prev.getMonth() - 1);
+                          setAttendanceMonth(new Date(prev.getFullYear(), prev.getMonth(), 1));
+                        }}
+                        className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <span className="text-xs font-black text-gray-600 min-w-28 text-center">
+                        {attendanceMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const next = new Date(attendanceMonth);
+                          next.setMonth(next.getMonth() + 1);
+                          setAttendanceMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+                        }}
+                        className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1 text-[10px] font-black uppercase text-gray-400 mb-2">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label) => (
+                      <div key={label} className="text-center">{label}</div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {attendanceCalendarCells.map((cell, idx) => {
+                      if (!cell) return <div key={`empty-${idx}`} className="h-9 rounded-md bg-gray-50" />;
+
+                      const currentKey = dateKey(cell);
+                      const isSunday = cell.getDay() === 0;
+                      let type = 'absent';
+
+                      if (approvedLeaveDates.has(currentKey)) type = 'leave';
+                      else if (isSunday) type = 'sunday';
+                      else if (attendanceMap[currentKey]?.status === 'present' || attendanceMap[currentKey]?.status === 'late') type = 'present';
+
+                      const typeClassMap = {
+                        present: 'bg-emerald-100 text-emerald-700',
+                        leave: 'bg-violet-100 text-violet-700',
+                        sunday: 'bg-amber-100 text-amber-700',
+                        absent: 'bg-rose-100 text-rose-700'
+                      };
+
+                      return (
+                        <div key={currentKey} className={`h-9 rounded-md flex items-center justify-center text-[11px] font-black ${typeClassMap[type]}`}>
+                          {cell.getDate()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        <th className="pb-4 px-4">Date</th>
+                        <th className="pb-4 px-4">Check In</th>
+                        <th className="pb-4 px-4">Check Out</th>
+                        <th className="pb-4 px-4">Worked</th>
+                        <th className="pb-4 px-4 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {data.attendance?.map(a => (
+                        <tr key={a._id} className="group hover:bg-gray-50/30 transition-colors">
+                          <td className="py-4 px-4 text-sm font-black text-gray-700">{a.date}</td>
+                          <td className="py-4 px-4 text-sm font-bold text-gray-500">{a.punchIn || '--:--'}</td>
+                          <td className="py-4 px-4 text-sm font-bold text-gray-500">{a.punchOut || '--:--'}</td>
+                          <td className="py-4 px-4 text-sm font-black text-blue-700">{formatDuration(calculateWorkedMinutes(a))}</td>
+                          <td className="py-4 px-4 text-right">
+                            <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${(a.status === 'present' || a.status === 'late') ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{a.status}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

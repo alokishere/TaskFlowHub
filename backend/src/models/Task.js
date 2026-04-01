@@ -32,6 +32,39 @@ const taskSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'rejected'],
       default: 'pending'
     },
+    progressPercent: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0
+    },
+    progressUpdatedAt: {
+      type: Date,
+      default: null
+    },
+    progressHistory: [
+      {
+        date: {
+          type: String,
+          required: true
+        },
+        percent: {
+          type: Number,
+          min: 0,
+          max: 100,
+          required: true
+        },
+        note: {
+          type: String,
+          trim: true,
+          default: ''
+        },
+        updatedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
     date: {
       type: Date,
       default: Date.now

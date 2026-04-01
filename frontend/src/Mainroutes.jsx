@@ -43,11 +43,22 @@ const ProtectedRoute = ({ children, role }) => {
   return children;
 };
 
+const PublicRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  if (token && user) {
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/employee'} />;
+  }
+
+  return children;
+};
+
 const Mainrouts = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
 
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />

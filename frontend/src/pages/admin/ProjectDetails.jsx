@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { ArrowLeft, Briefcase, Users, CheckCircle, Clock, Trash2, Edit } from 'lucide-react';
+import {
+  ArrowLeft,
+  Briefcase,
+  Users,
+  CheckCircle,
+  Trash2,
+  Gauge,
+  Activity
+} from 'lucide-react';
 import API, { imageBaseUrl } from '../../services/api';
 
 const ProjectDetails = () => {
@@ -9,6 +17,7 @@ const ProjectDetails = () => {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const todayKey = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
   const fetchData = async () => {
     try {
@@ -30,69 +39,157 @@ const ProjectDetails = () => {
       try {
         await API.delete(`/projects/${id}`);
         navigate('/admin/projects');
-      } catch (err) { alert('Failed'); }
+      } catch (err) {
+        alert('Failed to delete project');
+      }
     }
+  };
+
+  const getTaskProgress = (task) => {
+    if (typeof task.progressPercent === 'number') return task.progressPercent;
+    return task.status === 'completed' ? 100 : 0;
   };
 
   if (loading) return <Layout role="admin">Loading...</Layout>;
 
   return (
     <Layout role="admin">
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={20}/></button>
+          <button onClick={() => navigate(-1)} className="rounded-lg p-2 transition hover:bg-gray-100">
+            <ArrowLeft size={20} />
+          </button>
           <h2 className="text-2xl font-bold text-gray-800">Project Details</h2>
         </div>
-        <div className="flex gap-2">
-          <button onClick={deleteProj} className="p-2 bg-red-100 text-red-600 rounded-lg"><Trash2 size={18}/></button>
-        </div>
+        <button onClick={deleteProj} className="rounded-lg bg-red-100 p-2 text-red-600">
+          <Trash2 size={18} />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-3xl font-bold text-gray-900">{data.title}</h3>
-              <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                data.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
-              }`}>{data.status}</span>
-            </div>
-            <p className="text-gray-500 leading-relaxed mb-8">{data.description}</p>
-            <div className="flex items-center gap-6 border-t border-gray-50 pt-6">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-8 lg:col-span-2">
+          <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Deadline</p>
-                <p className="font-bold text-gray-700">{new Date(data.deadline).toLocaleDateString()}</p>
+                <h3 className="text-3xl font-bold text-gray-900">{data.title}</h3>
+                <p className="mt-2 text-gray-500">{data.description}</p>
               </div>
+              <span className={`rounded-full px-4 py-1 text-xs font-black uppercase tracking-wider ${
+                data.status === 'completed'
+                  ? 'bg-green-100 text-green-600'
+                  : data.status === 'in-progress'
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'bg-orange-100 text-orange-600'
+              }`}>
+                {data.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-6 md:grid-cols-3">
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Deadline</p>
+                <p className="mt-1 font-bold text-gray-800">{new Date(data.deadline).toLocaleDateString()}</p>
+              </div>
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Overall Progress</p>
+                <p className="mt-1 text-xl font-black text-blue-600">{data.progress || 0}%</p>
+              </div>
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Updates Today</p>
+                <p className="mt-1 text-xl font-black text-violet-600">{data.todayUpdates || 0}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 h-3 overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full bg-linear-to-r from-blue-500 to-cyan-400 transition-all duration-700"
+                style={{ width: `${Math.max(0, Math.min(100, data.progress || 0))}%` }}
+              />
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-            <h4 className="font-bold text-gray-800 mb-6 flex items-center gap-2"><CheckCircle size={20} className="text-green-600"/> Tasks & Milestones</h4>
+          <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+            <h4 className="mb-6 flex items-center gap-2 font-bold text-gray-800">
+              <CheckCircle size={20} className="text-green-600" />
+              Task Execution Board
+            </h4>
             <div className="space-y-4">
-              {data.tasks?.map(t => (
-                <div key={t._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                  <div>
-                    <p className="font-bold text-gray-800">{t.message}</p>
-                    <p className="text-xs text-gray-400">Assigned to: {t.assignedTo?.name}</p>
+              {data.tasks?.map((task) => {
+                const taskProgress = getTaskProgress(task);
+                const todayUpdate = task.progressHistory?.find((entry) => entry.date === todayKey);
+                return (
+                  <div key={task._id} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+                    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-gray-800">{task.message}</p>
+                        <p className="text-xs text-gray-500">Assigned to: {task.assignedTo?.name || 'Unassigned'}</p>
+                      </div>
+                      <span className={`rounded-md px-2 py-1 text-[10px] font-black uppercase ${
+                        task.status === 'completed'
+                          ? 'bg-green-100 text-green-600'
+                          : task.status === 'in-progress'
+                            ? 'bg-blue-100 text-blue-600'
+                            : task.status === 'testing'
+                              ? 'bg-violet-100 text-violet-600'
+                              : 'bg-orange-100 text-orange-600'
+                      }`}>
+                        {task.status}
+                      </span>
+                    </div>
+
+                    <div className="mb-2 flex items-center justify-between text-xs font-bold text-gray-600">
+                      <span className="inline-flex items-center gap-1">
+                        <Gauge size={13} />
+                        Employee progress
+                      </span>
+                      <span>{taskProgress}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="h-full bg-linear-to-r from-cyan-500 to-blue-500 transition-all duration-700"
+                        style={{ width: `${Math.max(0, Math.min(100, taskProgress))}%` }}
+                      />
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+                      <p className="mb-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-blue-600">
+                        <Activity size={12} />
+                        Today&apos;s update
+                      </p>
+                      <p className="text-xs text-blue-900">
+                        {todayUpdate?.note || 'No update note submitted today.'}
+                      </p>
+                      <p className="mt-1 text-[11px] text-blue-700">
+                        {todayUpdate
+                          ? `Updated at ${new Date(todayUpdate.updatedAt).toLocaleTimeString()}`
+                          : 'Waiting for employee progress update'}
+                      </p>
+                    </div>
                   </div>
-                  <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${t.status === 'done' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{t.status}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-1 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm h-fit">
-          <h4 className="font-bold text-gray-800 mb-6 flex items-center gap-2"><Users size={20} className="text-blue-600"/> Assigned Team</h4>
+        <div className="h-fit rounded-3xl border border-gray-100 bg-white p-8 shadow-sm lg:col-span-1">
+          <h4 className="mb-6 flex items-center gap-2 font-bold text-gray-800">
+            <Users size={20} className="text-blue-600" />
+            Assigned Team
+          </h4>
           <div className="space-y-4">
-            {data.assignedTo?.map(emp => (
-              <div key={emp._id} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-xl overflow-hidden flex items-center justify-center text-purple-600 font-bold">
-                  {emp.image ? <img src={`${imageBaseUrl}${emp.image}`} className="w-full h-full object-cover"/> : emp.name.charAt(0)}
+            {data.assignedTo?.map((employee) => (
+              <div key={employee._id} className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-purple-100 font-bold text-purple-600">
+                  {employee.image ? (
+                    <img src={`${imageBaseUrl}${employee.image}`} alt={employee.name} className="h-full w-full object-cover" />
+                  ) : (
+                    employee.name.charAt(0)
+                  )}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-800">{emp.name}</p>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase">{emp.department}</p>
+                  <p className="text-sm font-bold text-gray-800">{employee.name}</p>
+                  <p className="text-[10px] font-bold uppercase text-gray-400">{employee.department}</p>
                 </div>
               </div>
             ))}

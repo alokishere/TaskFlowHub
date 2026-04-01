@@ -15,6 +15,9 @@ const Messages = () => {
     const fetchEmps = async () => {
       const { data } = await API.get('/users');
       setEmployees(data.data);
+      if (data.data.length === 1 && user.role !== 'admin') {
+        setSelectedEmp(data.data[0]);
+      }
     };
     fetchEmps();
   }, []);
@@ -52,7 +55,9 @@ const Messages = () => {
       <div className="h-[calc(100vh-160px)] bg-white rounded-3xl border border-gray-100 shadow-sm flex overflow-hidden">
         <div className="w-80 border-r border-gray-50 flex flex-col">
           <div className="p-6 border-b border-gray-50">
-            <h3 className="text-lg font-bold text-gray-800">Conversations</h3>
+            <h3 className="text-lg font-bold text-gray-800">
+              {user.role === 'admin' ? 'Employees' : 'Administrators'}
+            </h3>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {employees.map(emp => (

@@ -1,6 +1,53 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
-const User = require('../models/User');
+const { getLocalDateString } = require('../utils/time');
+
+const getTaskProgressPercent = (task) => {
+  if (typeof task.progressPercent === 'number') {
+    return Math.max(0, Math.min(100, task.progressPercent));
+  }
+  return task.status === 'completed' ? 100 : 0;
+};
+
+const calculateProjectMetrics = (tasks) => {
+  const taskCount = tasks.length;
+  const completedTasks = tasks.filter((task) => task.status === 'completed').length;
+  const totalProgress = tasks.reduce((sum, task) => sum + getTaskProgressPercent(task), 0);
+  const today = getLocalDateString();
+  const todayUpdates = tasks.filter((task) => {
+    if (!task.progressUpdatedAt) return false;
+    return getLocalDateString(new Date(task.progressUpdatedAt)) === today;
+  }).length;
+
+  return {
+    taskCount,
+    completedTasks,
+    progress: taskCount > 0 ? Math.round(totalProgress / taskCount) : 0,
+    todayUpdates
+  };
+};
+
+const upsertTodayProgress = (task, percent, note = '') => {
+  const today = getLocalDateString();
+  const now = new Date();
+  const history = Array.isArray(task.progressHistory) ? task.progressHistory : [];
+  const existingEntry = history.find((entry) => entry.date === today);
+
+  if (existingEntry) {
+    existingEntry.percent = percent;
+    existingEntry.note = note || existingEntry.note || '';
+    existingEntry.updatedAt = now;
+  } else {
+    history.push({
+      date: today,
+      percent,
+      note,
+      updatedAt: now
+    });
+  }
+
+  task.progressHistory = history.slice(-60);
+};
 
 const createProject = async (req, res, next) => {
   try {
@@ -20,7 +67,9 @@ const createProject = async (req, res, next) => {
         assignedTo: a.userId,
         title: `Task for ${project.title}`,
         message: a.message,
-        status: 'pending'
+        status: 'pending',
+        progressPercent: 0,
+        progressHistory: []
       }));
       await Task.insertMany(tasks);
     }
@@ -37,20 +86,27 @@ const createProject = async (req, res, next) => {
 const getAllProjects = async (req, res, next) => {
   try {
     const projects = await Project.find().populate('assignedTo', 'name email image department');
-    
-    // Add progress and task info to each project
-    const projectsWithProgress = await Promise.all(projects.map(async (p) => {
-      const tasks = await Task.find({ projectId: p._id });
-      const completed = tasks.filter(t => t.status === 'completed').length;
-      const progress = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
-      
+
+    const projectIds = projects.map((project) => project._id);
+    const allTasks = await Task.find({ projectId: { $in: projectIds } }).select(
+      'projectId status progressPercent progressUpdatedAt'
+    );
+    const tasksByProjectId = allTasks.reduce((acc, task) => {
+      const key = task.projectId.toString();
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(task);
+      return acc;
+    }, {});
+
+    const projectsWithProgress = projects.map((project) => {
+      const tasks = tasksByProjectId[project._id.toString()] || [];
+      const metrics = calculateProjectMetrics(tasks);
+
       return {
-        ...p.toObject(),
-        taskCount: tasks.length,
-        completedTasks: completed,
-        progress
+        ...project.toObject(),
+        ...metrics
       };
-    }));
+    });
 
     res.status(200).json({
       success: true,
@@ -69,17 +125,14 @@ const getProjectById = async (req, res, next) => {
     }
 
     const tasks = await Task.find({ projectId: project._id }).populate('assignedTo', 'name');
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const progress = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+    const metrics = calculateProjectMetrics(tasks);
 
     res.status(200).json({
       success: true,
       data: {
         ...project.toObject(),
         tasks,
-        taskCount: tasks.length,
-        completedTasks: completed,
-        progress
+        ...metrics
       }
     });
   } catch (error) {
@@ -105,8 +158,6 @@ const updateProject = async (req, res, next) => {
       
       // Sync Tasks
       const currentTasks = await Task.find({ projectId: project._id });
-      const currentAssignedIds = currentTasks.map(t => t.assignedTo.toString());
-      const newAssignedIds = assignments.map(a => a.userId.toString());
 
       // 1. Remove tasks for users no longer assigned
       await Task.deleteMany({ 
@@ -126,7 +177,9 @@ const updateProject = async (req, res, next) => {
             assignedTo: assignment.userId,
             title: `Task for ${project.title}`,
             message: assignment.message,
-            status: 'pending'
+            status: 'pending',
+            progressPercent: 0,
+            progressHistory: []
           });
         }
       }
@@ -183,7 +236,11 @@ const getEmployeeProjects = async (req, res, next) => {
       const task = await Task.findOne({ projectId: p._id, assignedTo: req.user.id });
       return {
         ...p.toObject(),
-        taskMessage: task ? task.message : ''
+        taskMessage: task ? task.message : '',
+        taskStatus: task ? task.status : 'pending',
+        taskAcceptanceStatus: task ? task.acceptanceStatus : 'pending',
+        taskProgressPercent: task ? getTaskProgressPercent(task) : 0,
+        taskProgressUpdatedAt: task ? task.progressUpdatedAt : null
       };
     }));
 
@@ -198,7 +255,7 @@ const getEmployeeProjects = async (req, res, next) => {
 
 const getEmployeeTasks = async (req, res, next) => {
   try {
-    const tasks = await Task.find({ assignedTo: req.user.id }).populate('projectId', 'title');
+    const tasks = await Task.find({ assignedTo: req.user.id }).populate('projectId', 'title deadline status');
     res.status(200).json({
       success: true,
       data: tasks
@@ -221,6 +278,59 @@ const updateTaskStatus = async (req, res, next) => {
     }
 
     task.status = status;
+    if (status === 'completed') {
+      task.progressPercent = 100;
+      task.progressUpdatedAt = new Date();
+      upsertTodayProgress(task, 100, 'Marked completed');
+    }
+    await task.save();
+
+    res.status(200).json({
+      success: true,
+      data: task
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateTaskProgress = async (req, res, next) => {
+  try {
+    const { progressPercent, note = '' } = req.body;
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    if (task.assignedTo.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (task.acceptanceStatus !== 'accepted') {
+      return res.status(400).json({
+        success: false,
+        message: 'Accept the assignment before submitting progress updates'
+      });
+    }
+
+    const parsedProgress = Number(progressPercent);
+    if (!Number.isFinite(parsedProgress)) {
+      return res.status(400).json({ success: false, message: 'Progress must be a valid number' });
+    }
+
+    const normalizedProgress = Math.max(0, Math.min(100, Math.round(parsedProgress)));
+    const normalizedNote = String(note || '').trim();
+
+    task.progressPercent = normalizedProgress;
+    task.progressUpdatedAt = new Date();
+    upsertTodayProgress(task, normalizedProgress, normalizedNote);
+
+    if (normalizedProgress === 100) {
+      task.status = 'completed';
+    } else if (normalizedProgress > 0 && task.status === 'pending') {
+      task.status = 'in-progress';
+    }
+
     await task.save();
 
     res.status(200).json({
@@ -245,6 +355,10 @@ const respondToProjectAssignment = async (req, res, next) => {
     }
 
     task.acceptanceStatus = acceptanceStatus;
+    if (acceptanceStatus === 'rejected') {
+      task.progressPercent = 0;
+      task.progressUpdatedAt = null;
+    }
     await task.save();
 
     res.status(200).json({
@@ -266,5 +380,6 @@ module.exports = {
   getEmployeeProjects,
   getEmployeeTasks,
   updateTaskStatus,
+  updateTaskProgress,
   respondToProjectAssignment
 };

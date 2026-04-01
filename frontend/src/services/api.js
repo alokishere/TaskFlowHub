@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const BASE_URL = isLocalhost 
+  ? "http://localhost:5001/api" 
+  : "https://task-flow-hub-5ah4.vercel.app/api";
+
+const IMAGE_BASE_URL = isLocalhost 
+  ? "http://localhost:5001/" 
+  : "https://task-flow-hub-5ah4.vercel.app/";
+
 const API = axios.create({
-  baseURL: "http://localhost:5001/api"
+  baseURL: BASE_URL
 });
 
 API.interceptors.request.use((config) => {
@@ -14,4 +24,4 @@ API.interceptors.request.use((config) => {
 
 export default API;
 
-export const imageBaseUrl = "http://localhost:5001/";
+export const imageBaseUrl = IMAGE_BASE_URL;

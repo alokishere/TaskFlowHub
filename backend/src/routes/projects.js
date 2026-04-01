@@ -10,6 +10,7 @@ const {
   getEmployeeProjects,
   getEmployeeTasks,
   updateTaskStatus,
+  updateTaskProgress,
   respondToProjectAssignment
 } = require('../controllers/projectController');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
@@ -20,6 +21,7 @@ router.use(requireAuth);
 router.get('/my-projects', getEmployeeProjects);
 router.get('/my-tasks', getEmployeeTasks);
 router.patch('/tasks/:id/status', updateTaskStatus);
+router.patch('/tasks/:id/progress', updateTaskProgress);
 router.patch('/tasks/:id/respond', respondToProjectAssignment);
 
 // Admin routes

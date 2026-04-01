@@ -17,6 +17,7 @@ const app = express();
 
 connectDB();
 
+
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173'
@@ -38,6 +39,9 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'API running' });
 });
 
+app.get('/', (req, res) => {
+  res.send('Task Flow backend is running properly 🚀');
+});
 
 app.use('*', (req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });
