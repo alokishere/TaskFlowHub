@@ -111,7 +111,7 @@ const EmployeeList = () => {
                         )}
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900">{emp.name}</div>
+                        <Link to={`/admin/employees/${emp.id}`} className="font-bold text-gray-900 hover:text-purple-600 transition-colors">{emp.name}</Link>
                         <div className="text-xs text-gray-500">{emp.email}</div>
                       </div>
                     </div>

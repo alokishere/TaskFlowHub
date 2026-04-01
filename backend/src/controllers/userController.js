@@ -1,4 +1,9 @@
 const User = require('../models/User');
+const Project = require('../models/Project');
+const Leave = require('../models/Leave');
+const Attendance = require('../models/Attendance');
+const { deleteFile } = require('../middleware/upload');
+const bcrypt = require('bcryptjs');
 
 const sanitizeUser = (user) => ({
   id: user._id,
@@ -16,7 +21,7 @@ const sanitizeUser = (user) => ({
 const getAllEmployees = async (req, res, next) => {
   try {
     const { search, role, department } = req.query;
-    const query = { role: { $ne: 'admin' } }; // Admin management usually excludes self
+    const query = { role: { $ne: 'admin' } };
 
     if (search) {
       query.$or = [
@@ -45,7 +50,7 @@ const createEmployee = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
-    const image = req.file ? `/public/uploads/${req.file.filename}` : '';
+    const image = req.file ? `public/uploads/${req.file.filename}` : '';
 
     const employee = await User.create({
       name, email, password, mobile, role, department, salary, image
@@ -66,9 +71,22 @@ const getEmployeeById = async (req, res, next) => {
     if (!employee) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
+
+    // Fetch related data
+    const projects = await Project.find({ assignedTo: employee._id });
+    const tasks = await Task.find({ assignedTo: employee._id });
+    const leaves = await Leave.find({ userId: employee._id }).sort({ createdAt: -1 });
+    const attendance = await Attendance.find({ userId: employee._id }).sort({ date: -1 });
+
     res.status(200).json({
       success: true,
-      data: sanitizeUser(employee)
+      data: {
+        ...sanitizeUser(employee),
+        projects,
+        tasks,
+        leaves,
+        attendance
+      }
     });
   } catch (error) {
     next(error);
@@ -91,7 +109,8 @@ const updateEmployee = async (req, res, next) => {
     if (salary) employee.salary = salary;
 
     if (req.file) {
-      employee.image = `/public/uploads/${req.file.filename}`;
+      deleteFile(employee.image);
+      employee.image = `public/uploads/${req.file.filename}`;
     }
 
     await employee.save();
@@ -100,6 +119,26 @@ const updateEmployee = async (req, res, next) => {
       success: true,
       data: sanitizeUser(employee)
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+    const employee = await User.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    employee.password = password;
+    await employee.save();
+
+    res.status(200).json({ success: true, message: 'Password updated' });
   } catch (error) {
     next(error);
   }
@@ -126,10 +165,14 @@ const toggleStatus = async (req, res, next) => {
 
 const deleteEmployee = async (req, res, next) => {
   try {
-    const employee = await User.findByIdAndDelete(req.params.id);
+    const employee = await User.findById(req.params.id);
     if (!employee) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
+
+    deleteFile(employee.image);
+    await User.findByIdAndDelete(req.params.id);
+
     res.status(200).json({
       success: true,
       message: 'Employee deleted'
@@ -145,5 +188,6 @@ module.exports = {
   getEmployeeById,
   updateEmployee,
   toggleStatus,
-  deleteEmployee
+  deleteEmployee,
+  changePassword
 };

@@ -7,7 +7,9 @@ import {
   FileCheck, 
   User, 
   Settings, 
-  LogOut 
+  LogOut,
+  ListTodo,
+  MessageSquare
 } from 'lucide-react';
 
 const EmployeeSidebar = () => {
@@ -22,8 +24,10 @@ const EmployeeSidebar = () => {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/employee' },
     { name: 'My Projects', icon: Briefcase, path: '/employee/projects' },
+    { name: 'My Tasks', icon: ListTodo, path: '/employee/tasks' },
     { name: 'Attendance', icon: Clock, path: '/employee/attendance' },
     { name: 'Leave Request', icon: FileCheck, path: '/employee/leaves' },
+    { name: 'Messages', icon: MessageSquare, path: '/employee/messages' },
     { name: 'Profile', icon: User, path: '/employee/profile' },
     { name: 'Settings', icon: Settings, path: '/employee/settings' },
   ];

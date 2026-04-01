@@ -14,4 +14,4 @@ API.interceptors.request.use((config) => {
 
 export default API;
 
-export const imageBaseUrl = "http://localhost:5001";
+export const imageBaseUrl = "http://localhost:5001/";

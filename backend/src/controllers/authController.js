@@ -47,9 +47,36 @@ const bootstrapAdmin = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for:', email);
+
+    // Seed admin if none exists
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (!adminExists) {
+      console.log('No admin found, seeding default admin...');
+      await User.create({
+        name: 'Admin',
+        email: 'admin@sarathi.in',
+        password: 'password123',
+        mobile: '0000000000',
+        role: 'admin',
+        department: 'Management',
+        salary: 0,
+        status: 'active'
+      });
+      console.log('Default admin seeded: admin@sarathi.in / password123');
+    }
+
     const user = await User.findOne({ email }).select('+password');
 
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user) {
+      console.log('User not found:', email);
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    console.log('Password match:', isMatch);
+
+    if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 

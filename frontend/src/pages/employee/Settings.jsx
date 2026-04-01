@@ -30,15 +30,15 @@ const Settings = () => {
     setSuccess(false);
 
     const data = new FormData();
-    Object.keys(formData).forEach(key => {
-      if (formData[key]) data.append(key, formData[key]);
-    });
+    // Only send what is allowed to be updated by employee
+    if (formData.password) data.append('password', formData.password);
     if (image) data.append('image', image);
 
     try {
       const response = await API.put('/auth/settings', data);
       localStorage.setItem('user', JSON.stringify(response.data.data.user));
       setSuccess(true);
+      setFormData({ ...formData, password: '' });
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update settings');
@@ -52,7 +52,7 @@ const Settings = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Account Settings</h2>
-          <p className="text-gray-500">Update your personal information and security settings.</p>
+          <p className="text-gray-500">Manage your profile image and password.</p>
         </div>
       </div>
 
@@ -79,49 +79,33 @@ const Settings = () => {
             </div>
             <div>
               <h4 className="text-lg font-bold text-gray-900">{user.name}</h4>
-              <p className="text-sm text-gray-500 uppercase tracking-wider font-bold">{user.role}</p>
+              <p className="text-sm text-gray-500 uppercase tracking-wider font-bold">{user.role} • {user.department}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+            <div className="space-y-2 opacity-60">
+              <label className="text-xs font-bold text-gray-500 uppercase">Full Name (Read Only)</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  name="name"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-blue-200 outline-none transition-all border"
+                  disabled
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border-transparent rounded-xl outline-none cursor-not-allowed border"
                   value={formData.name}
-                  onChange={handleChange}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
+            <div className="space-y-2 opacity-60">
+              <label className="text-xs font-bold text-gray-500 uppercase">Email (Read Only)</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="email"
-                  name="email"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-blue-200 outline-none transition-all border"
+                  disabled
+                  className="w-full pl-12 pr-4 py-3 bg-gray-100 border-transparent rounded-xl outline-none cursor-not-allowed border"
                   value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase">Mobile Number</label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  name="mobile"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-blue-200 outline-none transition-all border"
-                  value={formData.mobile}
-                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -134,7 +118,7 @@ const Settings = () => {
                   type="password"
                   name="password"
                   className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:border-blue-200 outline-none transition-all border"
-                  placeholder="Leave blank to keep current"
+                  placeholder="Enter new password"
                   value={formData.password}
                   onChange={handleChange}
                 />
@@ -147,7 +131,7 @@ const Settings = () => {
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-100 disabled:opacity-70"
           >
-            {loading ? 'Saving Changes...' : 'Update Profile'}
+            {loading ? 'Saving Changes...' : 'Update Security Settings'}
           </button>
         </form>
       </div>

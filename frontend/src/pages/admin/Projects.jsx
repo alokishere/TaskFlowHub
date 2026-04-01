@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Plus, Briefcase, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { 
+  Plus, Briefcase, Calendar, CheckCircle, Clock, 
+  AlertCircle, Trash2, MoreVertical, ExternalLink,
+  Target, Users, TrendingUp
+} from 'lucide-react';
 import API from '../../services/api';
 import {imageBaseUrl} from '../../services/api';
 
@@ -24,6 +28,17 @@ const Projects = () => {
     fetchProjects();
   }, []);
 
+  const deleteProject = async (id) => {
+    if (window.confirm('Are you sure you want to delete this project? This will also delete all associated tasks.')) {
+      try {
+        await API.delete(`/projects/${id}`);
+        setProjects(projects.filter(p => p._id !== id));
+      } catch (err) {
+        alert('Failed to delete project');
+      }
+    }
+  };
+
   const updateStatus = async (id, status) => {
     try {
       await API.patch(`/projects/${id}/status`, { status });
@@ -41,85 +56,108 @@ const Projects = () => {
     }
   };
 
+  if (loading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div></Layout>;
+
   return (
     <Layout role="admin">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Project Management</h2>
-          <p className="text-gray-500">Track and assign work to your teams.</p>
+          <h2 className="text-3xl font-black text-gray-800">Project Engine</h2>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Track execution and team performance</p>
         </div>
         <Link 
           to="/admin/projects/add"
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-purple-100"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-purple-100 flex items-center gap-3"
         >
-          <Plus size={20} />
-          Create Project
+          <Plus size={18} />
+          Create New Project
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {projects.map((project) => (
-          <div key={project._id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-2xl ${getStatusColor(project.status)}`}>
+          <div key={project._id} className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 flex flex-col hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-500 relative">
+            <div className="flex justify-between items-start mb-6">
+              <div className={`p-4 rounded-2xl shadow-sm ${getStatusColor(project.status)}`}>
                 <Briefcase size={24} />
               </div>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusColor(project.status)}`}>
-                {project.status}
-              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => deleteProject(project._id)}
+                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
             
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{project.title}</h3>
-            <p className="text-gray-500 text-sm mb-6 flex-1 line-clamp-3">{project.description}</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${getStatusColor(project.status)}`}>
+                  {project.status}
+                </span>
+                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center gap-1">
+                  <Clock size={10} />
+                  {new Date(project.deadline).toLocaleDateString()}
+                </span>
+              </div>
+              <Link to={`/admin/projects/${project._id}`} className="text-xl font-black text-gray-900 mb-3 block group-hover:text-purple-600 transition-colors line-clamp-1">{project.title}</Link>
+              <p className="text-xs font-bold text-gray-400 mb-8 line-clamp-2 leading-relaxed">{project.description}</p>
+            </div>
+
+            <div className="mb-8 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-50">
+              <div className="flex justify-between items-end mb-3">
+                <div className="flex items-center gap-2">
+                  <Target size={14} className="text-purple-600" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progress</span>
+                </div>
+                <span className="text-sm font-black text-gray-900">{project.progress}%</span>
+              </div>
+              <div className="h-2 bg-white rounded-full overflow-hidden shadow-inner">
+                <div 
+                  className={`h-full transition-all duration-1000 ease-out ${project.progress === 100 ? 'bg-green-500' : 'bg-purple-600'}`} 
+                  style={{ width: `${project.progress}%` }} 
+                />
+              </div>
+              <div className="mt-4 flex justify-between text-[10px] font-black uppercase tracking-tighter">
+                <div className="flex items-center gap-1 text-gray-400">
+                  <Users size={12} />
+                  <span>{project.assignedTo.length} Assigned</span>
+                </div>
+                <div className="text-purple-600">{project.completedTasks}/{project.taskCount} Tasks Done</div>
+              </div>
+            </div>
             
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex -space-x-2">
+            <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-50">
+              <div className="flex -space-x-3">
                 {project.assignedTo.slice(0, 3).map((user) => (
-                  <div key={user._id} className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-bold overflow-hidden" title={user.name}>
-                    {user.image ? <img src={`${imageBaseUrl}${user.image}`} alt={user.name} className="w-full h-full object-cover" /> : user.name.charAt(0)}
+                  <div key={user._id} className="w-10 h-10 rounded-xl border-4 border-white bg-white shadow-sm flex items-center justify-center text-[10px] font-black overflow-hidden relative group/avatar" title={user.name}>
+                    {user.image ? <img src={`${imageBaseUrl}${user.image}`} alt={user.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-purple-50 text-purple-600 flex items-center justify-center">{user.name.charAt(0)}</div>}
                   </div>
                 ))}
                 {project.assignedTo.length > 3 && (
-                  <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                  <div className="w-10 h-10 rounded-xl border-4 border-white bg-gray-50 shadow-sm flex items-center justify-center text-[10px] font-black text-gray-400">
                     +{project.assignedTo.length - 3}
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-xs text-gray-400 font-medium">
-                <Calendar size={14} />
-                {new Date(project.deadline).toLocaleDateString()}
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-gray-50 grid grid-cols-3 gap-2">
-              <button 
-                onClick={() => updateStatus(project._id, 'pending')}
-                className={`p-2 rounded-lg text-xs font-bold transition-all ${project.status === 'pending' ? 'bg-orange-600 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
-              >
-                Pending
-              </button>
-              <button 
-                onClick={() => updateStatus(project._id, 'in-progress')}
-                className={`p-2 rounded-lg text-xs font-bold transition-all ${project.status === 'in-progress' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
-              >
-                In Progress
-              </button>
-              <button 
-                onClick={() => updateStatus(project._id, 'completed')}
-                className={`p-2 rounded-lg text-xs font-bold transition-all ${project.status === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
-              >
-                Done
-              </button>
+              
+              <Link to={`/admin/projects/${project._id}`} className="p-3 bg-gray-50 text-gray-400 hover:bg-purple-600 hover:text-white rounded-xl transition-all shadow-sm">
+                <ExternalLink size={18} />
+              </Link>
             </div>
           </div>
         ))}
       </div>
       
-      {!loading && projects.length === 0 && (
-        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
-          <AlertCircle size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-bold text-gray-800">No projects yet</h3>
-          <p className="text-gray-500">Start by creating your first project and assigning it to staff.</p>
+      {projects.length === 0 && (
+        <div className="text-center py-32 bg-white rounded-[3rem] border-4 border-dashed border-gray-50">
+          <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+            <AlertCircle size={40} className="text-gray-200" />
+          </div>
+          <h3 className="text-xl font-black text-gray-800 mb-2">No projects running</h3>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Start by creating your first engine</p>
+          <Link to="/admin/projects/add" className="mt-8 inline-block text-purple-600 font-black text-xs uppercase tracking-widest hover:underline">Launch Project Now</Link>
         </div>
       )}
     </Layout>

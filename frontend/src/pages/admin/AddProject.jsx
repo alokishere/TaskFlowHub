@@ -163,7 +163,7 @@ const AddProject = () => {
               <Users size={20} className="text-purple-600" />
               Assign Employees
             </h3>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-2 max-h-100 overflow-y-auto pr-2 custom-scrollbar">
               {employees.map((emp) => (
                 <label 
                   key={emp.id} 

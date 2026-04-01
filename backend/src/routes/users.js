@@ -6,19 +6,20 @@ const {
   getEmployeeById,
   updateEmployee,
   toggleStatus,
-  deleteEmployee
+  deleteEmployee,
+  changePassword
 } = require('../controllers/userController');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const { upload } = require('../middleware/upload');
 
 router.use(requireAuth);
-router.use(requireAdmin);
 
 router.get('/', getAllEmployees);
-router.post('/', upload.single('image'), createEmployee);
-router.get('/:id', getEmployeeById);
-router.put('/:id', upload.single('image'), updateEmployee);
-router.patch('/:id/toggle-status', toggleStatus);
-router.delete('/:id', deleteEmployee);
+router.post('/', requireAdmin, upload.single('image'), createEmployee);
+router.get('/:id', requireAdmin, getEmployeeById);
+router.put('/:id', requireAdmin, upload.single('image'), updateEmployee);
+router.patch('/:id/toggle-status', requireAdmin, toggleStatus);
+router.patch('/:id/change-password', requireAdmin, changePassword);
+router.delete('/:id', requireAdmin, deleteEmployee);
 
 module.exports = router;

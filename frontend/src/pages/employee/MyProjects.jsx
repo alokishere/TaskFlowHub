@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { Briefcase, Calendar, MessageSquare, CheckCircle, Clock } from 'lucide-react';
+import { Briefcase, Calendar, MessageSquare, Check, X, Clock, Play, TestTube, CheckCircle2 } from 'lucide-react';
 import API from '../../services/api';
 
 const MyProjects = () => {
@@ -27,6 +27,13 @@ const MyProjects = () => {
     fetchData();
   }, []);
 
+  const respondToAssignment = async (taskId, acceptanceStatus) => {
+    try {
+      await API.patch(`/projects/tasks/${taskId}/respond`, { acceptanceStatus });
+      fetchData();
+    } catch (err) { alert('Failed'); }
+  };
+
   const updateTaskStatus = async (taskId, status) => {
     try {
       await API.patch(`/projects/tasks/${taskId}/status`, { status });
@@ -36,12 +43,30 @@ const MyProjects = () => {
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return <CheckCircle2 size={14} className="text-green-500" />;
+      case 'testing': return <TestTube size={14} className="text-purple-500" />;
+      case 'in-progress': return <Play size={14} className="text-blue-500" />;
+      default: return <Clock size={14} className="text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-600';
+      case 'testing': return 'bg-purple-100 text-purple-600';
+      case 'in-progress': return 'bg-blue-100 text-blue-600';
+      default: return 'bg-gray-100 text-gray-600';
+    }
+  };
+
   return (
     <Layout role="employee">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">My Projects</h2>
-          <p className="text-gray-500">View and manage projects assigned to you.</p>
+          <h2 className="text-2xl font-bold text-white">My Assigned Projects</h2>
+          <p className="text-gray-400">Accept or reject new assignments and track project progress.</p>
         </div>
       </div>
 
@@ -49,22 +74,22 @@ const MyProjects = () => {
         {projects.map((project) => {
           const projectTasks = tasks.filter(t => t.projectId?._id === project._id);
           return (
-            <div key={project._id} className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <div key={project._id} className="bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-800 pb-8">
                 <div className="flex items-start gap-4">
-                  <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl">
+                  <div className="p-4 bg-blue-900/30 text-blue-400 rounded-2xl border border-blue-800/50">
                     <Briefcase size={32} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{project.title}</h3>
-                    <div className="flex items-center gap-4 text-sm font-medium">
-                      <span className="flex items-center gap-1 text-gray-400">
+                    <h3 className="text-2xl font-bold text-white mb-1">{project.title}</h3>
+                    <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+                      <span className="flex items-center gap-1 text-gray-500">
                         <Calendar size={16} />
                         Deadline: {new Date(project.deadline).toLocaleDateString()}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider ${
-                        project.status === 'completed' ? 'bg-green-100 text-green-600' : 
-                        project.status === 'in-progress' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        project.status === 'completed' ? 'bg-green-900/30 text-green-400' : 
+                        project.status === 'in-progress' ? 'bg-blue-900/30 text-blue-400' : 'bg-orange-900/30 text-orange-400'
                       }`}>
                         {project.status}
                       </span>
@@ -73,47 +98,75 @@ const MyProjects = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Description</h4>
-                  <p className="text-gray-600 leading-relaxed">{project.description}</p>
+                  <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Project Overview</h4>
+                  <p className="text-gray-400 leading-relaxed text-sm">{project.description}</p>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">My Tasks</h4>
-                  <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Assignment Details</h4>
+                  <div className="space-y-4">
                     {projectTasks.map((task) => (
-                      <div key={task._id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <div className="flex items-start justify-between gap-4 mb-3">
-                          <div className="flex items-start gap-3">
-                            <MessageSquare size={18} className="text-blue-500 mt-1" />
-                            <p className="text-sm text-gray-700 font-medium">{task.message}</p>
+                      <div key={task._id} className="p-6 bg-gray-800/50 rounded-2xl border border-gray-700/50">
+                        <div className="flex items-start justify-between gap-4 mb-6">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <MessageSquare size={16} className="text-blue-400" />
+                              <span className="text-xs font-bold text-gray-300">Admin Message:</span>
+                            </div>
+                            <p className="text-sm text-gray-400 italic leading-relaxed">"{task.message}"</p>
                           </div>
                           <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${
-                            task.status === 'done' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                            task.acceptanceStatus === 'accepted' ? 'bg-green-900/30 text-green-400' : 
+                            task.acceptanceStatus === 'rejected' ? 'bg-red-900/30 text-red-400' : 'bg-yellow-900/30 text-yellow-400'
                           }`}>
-                            {task.status}
+                            {task.acceptanceStatus}
                           </span>
                         </div>
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => updateTaskStatus(task._id, 'pending')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${task.status === 'pending' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'bg-white text-gray-400 hover:bg-gray-100'}`}
-                          >
-                            Pending
-                          </button>
-                          <button 
-                            onClick={() => updateTaskStatus(task._id, 'done')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${task.status === 'done' ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-white text-gray-400 hover:bg-gray-100'}`}
-                          >
-                            Done
-                          </button>
-                        </div>
+
+                        {task.acceptanceStatus === 'pending' ? (
+                          <div className="flex gap-3">
+                            <button 
+                              onClick={() => respondToAssignment(task._id, 'accepted')}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase rounded-xl transition-all"
+                            >
+                              <Check size={16}/> Accept
+                            </button>
+                            <button 
+                              onClick={() => respondToAssignment(task._id, 'rejected')}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase rounded-xl transition-all"
+                            >
+                              <X size={16}/> Reject
+                            </button>
+                          </div>
+                        ) : task.acceptanceStatus === 'accepted' ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              {getStatusIcon(task.status)}
+                              <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">Current Status: {task.status}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {['in-progress', 'testing', 'completed'].map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => updateTaskStatus(task._id, s)}
+                                  className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                                    task.status === s 
+                                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                                      : 'bg-gray-800 text-gray-500 hover:bg-gray-700 border border-gray-700'
+                                  }`}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-red-400 font-bold text-center py-2 bg-red-900/10 rounded-lg">You have rejected this assignment.</p>
+                        )}
                       </div>
                     ))}
-                    {projectTasks.length === 0 && (
-                      <p className="text-sm text-gray-400 italic">No specific tasks assigned for this project.</p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -122,9 +175,9 @@ const MyProjects = () => {
         })}
 
         {!loading && projects.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
-            <Briefcase size={64} className="mx-auto text-gray-200 mb-4" />
-            <h3 className="text-xl font-bold text-gray-400">No projects assigned to you yet</h3>
+          <div className="text-center py-24 bg-gray-900 border border-dashed border-gray-800 rounded-3xl">
+            <Briefcase size={64} className="mx-auto text-gray-800 mb-6" />
+            <h3 className="text-xl font-bold text-gray-600">No projects assigned yet</h3>
           </div>
         )}
       </div>
