@@ -9,7 +9,7 @@ const Layout = ({ children, role }) => {
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="flex bg-gray-50 min-h-screen relative">
+    <div className="relative flex h-screen overflow-hidden bg-gray-50">
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
@@ -21,7 +21,7 @@ const Layout = ({ children, role }) => {
       {/* Sidebar Container */}
       <div
         className={`
-        fixed  inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+        fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:static lg:inset-0 lg:h-screen lg:translate-x-0
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}
       >
@@ -56,7 +56,7 @@ const Layout = ({ children, role }) => {
           </button>
         </header>
 
-        <main className="flex-1 min-h-0  overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 lg:p-8">
           <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col">
             {children}
           </div>

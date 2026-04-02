@@ -38,7 +38,7 @@ const EmployeeSidebar = ({ onClose }) => {
   ];
 
   return (
-    <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col p-6 overflow-y-auto">
+    <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col p-6 overflow-y-auto">
       <div className="flex items-center gap-2 mb-10 px-2">
         <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
           <img
