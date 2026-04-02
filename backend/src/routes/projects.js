@@ -5,6 +5,7 @@ const {
   getAllProjects,
   getProjectById,
   updateProject,
+  modifyProject,
   deleteProject,
   updateProjectStatus,
   getEmployeeProjects,
@@ -29,6 +30,7 @@ router.post('/', requireAdmin, createProject);
 router.get('/', requireAdmin, getAllProjects);
 router.get('/:id', requireAdmin, getProjectById);
 router.put('/:id', requireAdmin, updateProject);
+router.patch('/:id', requireAdmin, modifyProject);
 router.patch('/:id/status', requireAdmin, updateProjectStatus);
 router.delete('/:id', requireAdmin, deleteProject);
 

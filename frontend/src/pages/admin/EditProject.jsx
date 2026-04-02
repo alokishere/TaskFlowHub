@@ -77,7 +77,7 @@ const EditProject = () => {
     setSaving(true);
 
     try {
-      await API.put(`/projects/${id}`, {
+      await API.patch(`/projects/${id}`, {
         ...formData,
         assignments
       });

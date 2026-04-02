@@ -58,6 +58,119 @@ const normalizeAssigneeImages = (assignees = []) => assignees.map((assignee) => 
   };
 });
 
+const hasOwn = (payload, key) => Object.prototype.hasOwnProperty.call(payload || {}, key);
+
+const buildAssignmentInput = (assignments = []) => {
+  if (!Array.isArray(assignments)) {
+    const error = new Error('Assignments must be an array');
+    error.status = 400;
+    throw error;
+  }
+
+  const deduped = new Map();
+  assignments.forEach((assignment) => {
+    const userId = assignment?.userId ? String(assignment.userId) : '';
+    if (!userId) {
+      const error = new Error('Each assignment requires a userId');
+      error.status = 400;
+      throw error;
+    }
+
+    deduped.set(userId, {
+      userId,
+      message: typeof assignment.message === 'string' ? assignment.message : '',
+      title: typeof assignment.title === 'string' ? assignment.title.trim() : ''
+    });
+  });
+
+  return Array.from(deduped.values());
+};
+
+const applyProjectChanges = async (project, payload = {}) => {
+  const titleProvided = hasOwn(payload, 'title');
+  const descriptionProvided = hasOwn(payload, 'description');
+  const deadlineProvided = hasOwn(payload, 'deadline');
+  const statusProvided = hasOwn(payload, 'status');
+  const assignmentsProvided = hasOwn(payload, 'assignments');
+
+  if (titleProvided) {
+    const title = String(payload.title || '').trim();
+    if (!title) {
+      const error = new Error('Project title is required');
+      error.status = 400;
+      throw error;
+    }
+    project.title = title;
+  }
+
+  if (descriptionProvided) {
+    project.description = String(payload.description || '').trim();
+  }
+
+  if (deadlineProvided) {
+    const nextDeadline = new Date(payload.deadline);
+    if (Number.isNaN(nextDeadline.getTime())) {
+      const error = new Error('Invalid project deadline');
+      error.status = 400;
+      throw error;
+    }
+    project.deadline = nextDeadline;
+  }
+
+  if (statusProvided) {
+    const allowedStatuses = ['pending', 'in-progress', 'completed'];
+    if (!allowedStatuses.includes(payload.status)) {
+      const error = new Error('Invalid project status');
+      error.status = 400;
+      throw error;
+    }
+    project.status = payload.status;
+  }
+
+  if (assignmentsProvided) {
+    const assignmentInput = buildAssignmentInput(payload.assignments);
+    const assignedUserIds = assignmentInput.map((assignment) => assignment.userId);
+
+    project.assignedTo = assignedUserIds;
+
+    const currentTasks = await Task.find({ projectId: project._id });
+    const taskByUserId = new Map(currentTasks.map((task) => [task.assignedTo.toString(), task]));
+
+    await Task.deleteMany({
+      projectId: project._id,
+      assignedTo: { $nin: assignedUserIds }
+    });
+
+    for (const assignment of assignmentInput) {
+      const existingTask = taskByUserId.get(assignment.userId);
+      const nextTaskTitle = assignment.title || `Task for ${project.title}`;
+
+      if (existingTask) {
+        existingTask.title = nextTaskTitle;
+        existingTask.message = assignment.message;
+        await existingTask.save();
+      } else {
+        await Task.create({
+          projectId: project._id,
+          assignedTo: assignment.userId,
+          title: nextTaskTitle,
+          message: assignment.message,
+          status: 'pending',
+          progressPercent: 0,
+          progressHistory: []
+        });
+      }
+    }
+  } else if (titleProvided) {
+    await Task.updateMany(
+      { projectId: project._id },
+      { $set: { title: `Task for ${project.title}` } }
+    );
+  }
+
+  await project.save();
+};
+
 const createProject = async (req, res, next) => {
   try {
     const { title, description, deadline, assignments } = req.body;
@@ -153,52 +266,34 @@ const getProjectById = async (req, res, next) => {
 
 const updateProject = async (req, res, next) => {
   try {
-    const { title, description, deadline, status, assignments } = req.body;
     const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
-    if (title) project.title = title;
-    if (description) project.description = description;
-    if (deadline) project.deadline = deadline;
-    if (status) project.status = status;
-    
-    if (assignments) {
-      project.assignedTo = assignments.map(a => a.userId);
-      
-      // Sync Tasks
-      const currentTasks = await Task.find({ projectId: project._id });
-
-      // 1. Remove tasks for users no longer assigned
-      await Task.deleteMany({ 
-        projectId: project._id, 
-        assignedTo: { $nin: assignments.map(a => a.userId) } 
-      });
-
-      // 2. Update or Create tasks
-      for (const assignment of assignments) {
-        const existingTask = currentTasks.find(t => t.assignedTo.toString() === assignment.userId.toString());
-        if (existingTask) {
-          existingTask.message = assignment.message;
-          await existingTask.save();
-        } else {
-          await Task.create({
-            projectId: project._id,
-            assignedTo: assignment.userId,
-            title: `Task for ${project.title}`,
-            message: assignment.message,
-            status: 'pending',
-            progressPercent: 0,
-            progressHistory: []
-          });
-        }
-      }
-    }
-
-    await project.save();
+    await applyProjectChanges(project, req.body || {});
     res.status(200).json({ success: true, data: project });
   } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+const modifyProject = async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    await applyProjectChanges(project, req.body || {});
+    res.status(200).json({ success: true, data: project });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     next(error);
   }
 };
@@ -386,6 +481,7 @@ module.exports = {
   getAllProjects,
   getProjectById,
   updateProject,
+  modifyProject,
   deleteProject,
   updateProjectStatus,
   getEmployeeProjects,
