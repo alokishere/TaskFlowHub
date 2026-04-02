@@ -59,23 +59,26 @@ const Messages = () => {
 
   return (
     <Layout role={user.role}>
-      <div className="relative flex min-h-full flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm md:flex-row">
+      {/* KEY FIX: outer wrapper must have a fixed/known height so children can flex properly */}
+      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm md:flex-row">
+
         {/* Conversations List */}
-        <div className={`w-full min-h-0 border-r border-gray-50 md:w-[21rem] lg:w-[23rem] flex flex-col ${showChatOnMobile && selectedEmp ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-6 border-b border-gray-50">
+        <div className={`w-full border-r border-gray-50 md:w-84 lg:w-92 flex flex-col overflow-hidden ${showChatOnMobile && selectedEmp ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-6 border-b border-gray-50 shrink-0">
             <h3 className="text-lg font-black text-gray-800 tracking-tight">
               {user.role === 'admin' ? 'Employees' : 'Administrators'}
             </h3>
           </div>
+          {/* Scrollable employee list */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {employees.map(emp => (
-              <button 
-                key={emp.id} 
-                onClick={() => selectEmployee(emp)} 
+              <button
+                key={emp.id}
+                onClick={() => selectEmployee(emp)}
                 className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedEmp?.id === emp.id ? 'bg-purple-50 text-purple-600 shadow-sm' : 'hover:bg-gray-50 text-gray-500'}`}
               >
                 <div className="w-10 h-10 bg-white rounded-xl border border-gray-100 flex items-center justify-center font-bold overflow-hidden shadow-sm shrink-0">
-                  {emp.image ? <img src={`${imageBaseUrl}${emp.image}`} className="w-full h-full object-cover"/> : emp.name.charAt(0)}
+                  {emp.image ? <img src={`${imageBaseUrl}${emp.image}`} className="w-full h-full object-cover" /> : emp.name.charAt(0)}
                 </div>
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-black truncate">{emp.name}</p>
@@ -92,48 +95,57 @@ const Messages = () => {
         </div>
 
         {/* Chat Area */}
-        <div className={`md:flex-1 flex min-h-0 min-w-0 flex-col bg-gray-50/30 ${!showChatOnMobile || !selectedEmp ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col overflow-hidden bg-gray-50/30 ${!showChatOnMobile || !selectedEmp ? 'hidden md:flex' : 'flex'}`}>
           {selectedEmp ? (
             <>
+              {/* Chat Header — fixed height */}
               <div className="p-4 md:p-6 bg-white border-b border-gray-50 flex items-center gap-3 shrink-0">
-                <button 
+                <button
                   onClick={() => setShowChatOnMobile(false)}
                   className="md:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
                 >
                   <ArrowLeft size={20} />
                 </button>
-                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 font-bold overflow-hidden shadow-sm">
-                  {selectedEmp.image ? <img src={`${imageBaseUrl}${selectedEmp.image}`} className="w-full h-full object-cover"/> : selectedEmp.name.charAt(0)}
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 font-bold overflow-hidden shadow-sm shrink-0">
+                  {selectedEmp.image ? <img src={`${imageBaseUrl}${selectedEmp.image}`} className="w-full h-full object-cover" /> : selectedEmp.name.charAt(0)}
                 </div>
                 <div className="min-w-0">
                   <h4 className="font-black text-gray-900 leading-none truncate">{selectedEmp.name}</h4>
-                  <span className="text-[10px] text-green-500 font-black flex items-center gap-1 mt-1 uppercase tracking-widest"><div className="w-1.5 h-1.5 bg-green-500 rounded-full"/> Online</span>
+                  <span className="text-[10px] text-green-500 font-black flex items-center gap-1 mt-1 uppercase tracking-widest">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full" /> Online
+                  </span>
                 </div>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-                <div className="flex min-h-full flex-col justify-end gap-4">
-                  {messages.map(m => (
-                    <div key={m._id} className={`flex ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[88%] break-words rounded-3xl p-3 text-sm font-medium shadow-sm md:max-w-[74%] md:p-4 ${m.senderId === user.id ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
-                        {m.message}
-                        <p className={`text-[10px] mt-1 opacity-50 flex items-center gap-1 ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}><Clock size={10}/> {new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                      </div>
+
+              {/* KEY FIX: messages area — flex-1 + min-h-0 allows it to shrink,
+                  overflow-y-auto on THIS div (not a child) makes it scroll */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 flex flex-col gap-4">
+                {messages.map(m => (
+                  <div key={m._id} className={`flex ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[88%] break-words rounded-3xl p-3 text-sm font-medium shadow-sm md:max-w-[74%] md:p-4 ${m.senderId === user.id ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
+                      {m.message}
+                      <p className={`text-[10px] mt-1 opacity-50 flex items-center gap-1 ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
+                        <Clock size={10} /> {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
-                  ))}
-                  <div ref={chatEndRef}/>
-                </div>
+                  </div>
+                ))}
+                {/* Scroll anchor */}
+                <div ref={chatEndRef} />
               </div>
+
+              {/* Input — fixed at bottom */}
               <form onSubmit={handleSend} className="border-t border-gray-50 bg-white p-3 shrink-0 sm:p-4 md:p-5 lg:p-6">
                 <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Type your message..." 
-                    className="w-full rounded-3xl border border-transparent bg-gray-50 py-3.5 pl-5 pr-14 text-sm font-bold shadow-inner outline-none transition-all focus:border-purple-200 focus:bg-white sm:pl-6 sm:pr-16 sm:py-4" 
-                    value={newMessage} 
-                    onChange={e => setNewMessage(e.target.value)} 
+                  <input
+                    type="text"
+                    placeholder="Type your message..."
+                    className="w-full rounded-3xl border border-transparent bg-gray-50 py-3.5 pl-5 pr-14 text-sm font-bold shadow-inner outline-none transition-all focus:border-purple-200 focus:bg-white sm:pl-6 sm:pr-16 sm:py-4"
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-purple-600 p-2.5 text-white shadow-lg shadow-purple-200 transition-all hover:bg-purple-700 sm:p-3"
                   >
                     <Send size={16} />
@@ -143,7 +155,9 @@ const Messages = () => {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-300 p-8 text-center">
-              <div className="p-8 bg-white rounded-[2.5rem] mb-6 border border-gray-100 shadow-xl"><Send size={48} className="text-purple-100" /></div>
+              <div className="p-8 bg-white rounded-[2.5rem] mb-6 border border-gray-100 shadow-xl">
+                <Send size={48} className="text-purple-100" />
+              </div>
               <h3 className="text-xl font-black text-gray-400 uppercase tracking-tighter">Start a Conversation</h3>
               <p className="text-sm font-bold text-gray-300 mt-2 uppercase tracking-widest">Select someone from the list to begin chatting</p>
             </div>
