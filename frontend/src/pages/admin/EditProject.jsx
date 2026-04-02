@@ -177,7 +177,7 @@ const EditProject = () => {
                 {assignments.map((a) => {
                   const emp = employees.find(e => e.id === a.userId);
                   return (
-                    <div key={a.userId} className="p-6 bg-gray-50/50 rounded-[2rem] space-y-4 border border-gray-50 relative group">
+                    <div key={a.userId} className="p-6 bg-gray-50/50 rounded-4xl space-y-4 border border-gray-50 relative group">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-xs font-black text-purple-600">
                           {emp?.image ? <img src={`${imageBaseUrl}${emp.image}`} alt={emp.name} className="w-full h-full object-cover rounded-xl" /> : emp?.name.charAt(0)}
@@ -199,7 +199,7 @@ const EditProject = () => {
                 })}
               </div>
             ) : (
-              <div className="text-center py-12 border-2 border-dashed border-gray-50 rounded-[2rem]">
+              <div className="text-center py-12 border-2 border-dashed border-gray-50 rounded-4xl">
                 <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Select team members on the right</p>
               </div>
             )}
@@ -212,7 +212,7 @@ const EditProject = () => {
               <Users size={20} className="text-purple-600" />
               Team Roster
             </h3>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-2 max-h-100 overflow-y-auto pr-2 custom-scrollbar">
               {employees.map((emp) => (
                 <label 
                   key={emp.id} 
@@ -250,7 +250,7 @@ const EditProject = () => {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-widest py-5 rounded-[1.5rem] transition-all shadow-xl shadow-purple-100 disabled:opacity-70 flex items-center justify-center gap-3"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-widest py-5 rounded-3xl transition-all shadow-xl shadow-purple-100 disabled:opacity-70 flex items-center justify-center gap-3"
           >
             {saving ? <><Loader2 className="animate-spin" size={18} /> Saving Changes...</> : <><Save size={18} /> Save Changes</>}
           </button>

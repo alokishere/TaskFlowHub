@@ -177,7 +177,7 @@ const AdminDashboard = () => {
   }, [fetchDashboardData]);
 
   const renderChartPlaceholder = (message) => (
-    <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm font-medium text-gray-500">
+    <div className="flex h-65 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm font-medium text-gray-500">
       {message}
     </div>
   );
@@ -233,7 +233,7 @@ const AdminDashboard = () => {
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm" aria-label="Employee department distribution">
           <h3 className="mb-5 text-lg font-bold text-gray-800">Employees by Department</h3>
           {departmentChart.length > 0 ? (
-            <div className="h-[260px]" role="img" aria-label="Bar chart showing employee count by department">
+            <div className="h-65" role="img" aria-label="Bar chart showing employee count by department">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={departmentChart} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -252,7 +252,7 @@ const AdminDashboard = () => {
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm" aria-label="Project status chart">
           <h3 className="mb-5 text-lg font-bold text-gray-800">Project Status Split</h3>
           {projectStatusChart.some((entry) => entry.value > 0) ? (
-            <div className="h-[260px]" role="img" aria-label="Pie chart showing project status distribution">
+            <div className="h-65" role="img" aria-label="Pie chart showing project status distribution">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -301,7 +301,7 @@ const AdminDashboard = () => {
             </span>
           </div>
           {attendanceTrend.some((entry) => entry.present > 0) ? (
-            <div className="h-[260px]" role="img" aria-label="Area chart showing present employee count for the last 7 days">
+            <div className="h-65" role="img" aria-label="Area chart showing present employee count for the last 7 days">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={attendanceTrend} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
                   <defs>
@@ -326,7 +326,7 @@ const AdminDashboard = () => {
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm" aria-label="Leave status chart">
           <h3 className="mb-5 text-lg font-bold text-gray-800">Leave Request Status</h3>
           {leaveStatusChart.some((entry) => entry.value > 0) ? (
-            <div className="h-[260px]" role="img" aria-label="Bar chart showing leave status counts">
+            <div className="h-65" role="img" aria-label="Bar chart showing leave status counts">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={leaveStatusChart} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />

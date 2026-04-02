@@ -27,6 +27,7 @@ import Profile from "./pages/employee/Profile";
 import EmployeeSettings from "./pages/employee/Settings";
 import MyTasks from './pages/employee/MyTasks';
 import Documents from './pages/admin/Documents';
+import Blog from './pages/admin/Blog';
 
 const ProtectedRoute = ({ children, role }) => {
   const token = localStorage.getItem('token');
@@ -74,6 +75,7 @@ const Mainrouts = () => {
       <Route path="/admin/salary" element={<ProtectedRoute role="admin"><SalaryManagement /></ProtectedRoute>} />
       <Route path="/admin/leaves" element={<ProtectedRoute role="admin"><LeaveManagement /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminSettings /></ProtectedRoute>} />
+      <Route path="/admin/blog" element={<ProtectedRoute role="admin"><Blog /></ProtectedRoute>} />
       <Route path="/admin/messages" element={<ProtectedRoute role="admin"><Messages /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Reports /></ProtectedRoute>} />
 

@@ -80,7 +80,7 @@ const Reports = () => {
           <h3 className="text-lg font-black text-gray-800 mb-8 flex items-center gap-3"><Briefcase className="text-blue-600" size={24}/> Projects Status</h3>
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             {Object.entries(stats.projectsByStatus).map(([status, count]) => (
-              <div key={status} className="text-center p-4 md:p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100/50">
+              <div key={status} className="text-center p-4 md:p-6 bg-gray-50/50 rounded-4xl border border-gray-100/50">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{status}</p>
                 <p className="text-2xl md:text-3xl font-black text-gray-800">{count}</p>
               </div>
@@ -100,7 +100,7 @@ const Reports = () => {
           <h3 className="text-lg font-black text-gray-800 mb-8 flex items-center gap-3"><FileCheck className="text-orange-600" size={24}/> Leave Statistics</h3>
           <div className="flex flex-col sm:flex-row gap-4">
             {Object.entries(stats.leaveSummary).map(([status, count]) => (
-              <div key={status} className="flex-1 text-center p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100/50">
+              <div key={status} className="flex-1 text-center p-6 bg-gray-50/50 rounded-4xl border border-gray-100/50">
                 <div className={`text-3xl font-black ${status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-orange-600'}`}>{count}</div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">{status}</p>
               </div>

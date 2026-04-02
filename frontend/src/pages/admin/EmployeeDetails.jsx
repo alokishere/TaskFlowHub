@@ -309,8 +309,8 @@ const EmployeeDetails = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm text-center">
-            <div className="w-32 h-32 mx-auto bg-linear-to-br from-purple-50 to-blue-50 rounded-[2rem] mb-6 overflow-hidden border-4 border-white shadow-xl relative group">
-              {data.image ? <img src={`${imageBaseUrl}${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110"/> : <span className="text-4xl font-black text-purple-600 leading-[8rem]">{data.name.charAt(0)}</span>}
+            <div className="w-32 h-32 mx-auto bg-linear-to-br from-purple-50 to-blue-50 rounded-4xl mb-6 overflow-hidden border-4 border-white shadow-xl relative group">
+              {data.image ? <img src={`${imageBaseUrl}${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110"/> : <span className="text-4xl font-black text-purple-600 leading-32">{data.name.charAt(0)}</span>}
               <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white shadow-sm ${data.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             </div>
             <h3 className="text-xl font-black text-gray-900 mb-1">{data.name}</h3>
@@ -394,7 +394,7 @@ const EmployeeDetails = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
                     <h4 className="font-black text-gray-800 flex items-center gap-2">
                       <TrendingUp size={18} className="text-purple-600" />
@@ -442,7 +442,7 @@ const EmployeeDetails = () => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm space-y-6">
+                <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm space-y-6">
                   <div>
                     <h4 className="font-black text-gray-800 mb-3 flex items-center gap-2">
                       <Briefcase size={18} className="text-blue-600" />
@@ -484,7 +484,7 @@ const EmployeeDetails = () => {
             <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.projects?.map(p => (
-                  <Link key={p._id} to={`/admin/projects/${p._id}`} className="group p-6 bg-gray-50/50 hover:bg-white border border-transparent hover:border-gray-100 rounded-[2rem] transition-all">
+                  <Link key={p._id} to={`/admin/projects/${p._id}`} className="group p-6 bg-gray-50/50 hover:bg-white border border-transparent hover:border-gray-100 rounded-4xl transition-all">
                     <div className="flex justify-between items-start mb-4">
                       <div className="p-3 bg-white rounded-2xl shadow-sm group-hover:bg-blue-50 transition-colors"><Briefcase size={20} className="text-blue-600"/></div>
                       <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${p.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>{p.status}</span>
@@ -520,7 +520,7 @@ const EmployeeDetails = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm">
                   <h4 className="font-black text-gray-800 mb-4 flex items-center gap-2">
                     <Timer size={18} className="text-blue-600" />
                     Last 7 Days Work Hours
@@ -550,7 +550,7 @@ const EmployeeDetails = () => {
                   )}
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm">
                   <h4 className="font-black text-gray-800 mb-4 flex items-center gap-2">
                     <Calendar size={18} className="text-purple-600" />
                     Monthly Attendance Split
@@ -593,7 +593,7 @@ const EmployeeDetails = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
+              <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
                   <h4 className="font-black text-gray-800 flex items-center gap-2">
                     <Calendar size={18} className="text-purple-600" />
@@ -659,7 +659,7 @@ const EmployeeDetails = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
+              <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
@@ -694,7 +694,7 @@ const EmployeeDetails = () => {
             <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
               <div className="space-y-4">
                 {data.leaves?.map(l => (
-                  <div key={l._id} className="p-6 bg-gray-50/50 rounded-[2rem] border border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div key={l._id} className="p-6 bg-gray-50/50 rounded-4xl border border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className={`p-3 rounded-2xl ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
                         {l.status === 'approved' ? <CheckCircle2 size={20}/> : l.status === 'rejected' ? <XCircle size={20}/> : <AlertCircle size={20}/>}
@@ -730,12 +730,12 @@ const EmployeeDetails = () => {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4 mb-2 block">New Password</label>
                 <div className="relative">
                   <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-                  <input type="password" required className="w-full pl-12 pr-6 py-4 bg-gray-50 border-transparent rounded-[1.5rem] focus:bg-white focus:border-purple-200 border outline-none font-bold transition-all shadow-inner" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                  <input type="password" required className="w-full pl-12 pr-6 py-4 bg-gray-50 border-transparent rounded-3xl focus:bg-white focus:border-purple-200 border outline-none font-bold transition-all shadow-inner" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                 </div>
               </div>
               <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setShowPassModal(false)} className="flex-1 py-4 text-gray-400 font-black text-xs uppercase tracking-widest hover:text-gray-600">Cancel</button>
-                <button type="submit" className="flex-1 bg-purple-600 text-white font-black text-xs uppercase tracking-widest py-4 rounded-[1.5rem] shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all">Update</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white font-black text-xs uppercase tracking-widest py-4 rounded-3xl shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all">Update</button>
               </div>
             </form>
           </div>

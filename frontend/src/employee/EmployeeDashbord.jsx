@@ -162,7 +162,7 @@ const EmployeeDashboard = () => {
   }, [fetchData]);
 
   const chartPlaceholder = (message) => (
-    <div className="flex h-[250px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm font-medium text-gray-500">
+    <div className="flex h-62.5 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm font-medium text-gray-500">
       {message}
     </div>
   );
@@ -211,7 +211,7 @@ const EmployeeDashboard = () => {
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm" aria-label="Task status chart">
           <h3 className="mb-4 text-lg font-bold text-gray-800">My Tasks by Status</h3>
           {taskStatusChart.some((entry) => entry.value > 0) ? (
-            <div className="h-[250px]" role="img" aria-label="Pie chart showing your task status distribution">
+            <div className="h-62.5" role="img" aria-label="Pie chart showing your task status distribution">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -257,7 +257,7 @@ const EmployeeDashboard = () => {
             </span>
           </div>
           {attendanceChart.some((entry) => entry.hours > 0) ? (
-            <div className="h-[250px]" role="img" aria-label="Area chart showing daily worked hours for the last 7 days">
+            <div className="h-62.5" role="img" aria-label="Area chart showing daily worked hours for the last 7 days">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={attendanceChart} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <defs>
@@ -284,7 +284,7 @@ const EmployeeDashboard = () => {
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm" aria-label="Weekly progress chart">
           <h3 className="mb-4 text-lg font-bold text-gray-800">Task Progress Trend (Last 7 Days)</h3>
           {progressChart.some((entry) => entry.progress > 0) ? (
-            <div className="h-[250px]" role="img" aria-label="Line chart showing your average task progress by day">
+            <div className="h-62.5" role="img" aria-label="Line chart showing your average task progress by day">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={progressChart} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />

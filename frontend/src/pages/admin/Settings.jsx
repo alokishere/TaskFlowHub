@@ -3,6 +3,7 @@ import Layout from '../../components/Layout';
 import { User, Mail, Phone, Lock, Upload, CheckCircle } from 'lucide-react';
 import API from '../../services/api';
 import { imageBaseUrl } from '../../services/api';
+
 const Settings = () => {
   const user = JSON.parse(localStorage.getItem('user'));
   const [loading, setLoading] = useState(false);
@@ -62,8 +63,8 @@ const Settings = () => {
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-gray-50/50 rounded-[2rem] border border-gray-100/50">
-            <div className="w-24 h-24 bg-purple-100 rounded-[1.5rem] flex items-center justify-center text-purple-600 text-3xl font-black border-4 border-white shadow-xl overflow-hidden relative group shrink-0">
+          <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-gray-50/50 rounded-4xl border border-gray-100/50">
+            <div className="w-24 h-24 bg-purple-100 rounded-3xl flex items-center justify-center text-purple-600 text-3xl font-black border-4 border-white shadow-xl overflow-hidden relative group shrink-0">
               {image ? (
                 <img src={URL.createObjectURL(image)} alt="" className="w-full h-full object-cover" />
               ) : user.image ? (
@@ -142,7 +143,7 @@ const Settings = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-widest py-5 rounded-[1.5rem] transition-all shadow-lg shadow-purple-200 disabled:opacity-70 active:scale-95"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-widest py-5 rounded-3xl transition-all shadow-lg shadow-purple-200 disabled:opacity-70 active:scale-95"
           >
             {loading ? 'Saving Changes...' : 'Update Profile'}
           </button>
