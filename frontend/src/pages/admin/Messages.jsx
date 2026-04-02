@@ -122,7 +122,7 @@ const Messages = () => {
               <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 flex flex-col gap-4">
                 {messages.map(m => (
                   <div key={m._id} className={`flex ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[88%] break-words rounded-3xl p-3 text-sm font-medium shadow-sm md:max-w-[74%] md:p-4 ${m.senderId === user.id ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
+                    <div className={`max-w-[88%] wrap-break-word rounded-3xl p-3 text-sm font-medium shadow-sm md:max-w-[74%] md:p-4 ${m.senderId === user.id ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
                       {m.message}
                       <p className={`text-[10px] mt-1 opacity-50 flex items-center gap-1 ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
                         <Clock size={10} /> {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
