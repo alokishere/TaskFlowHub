@@ -28,6 +28,8 @@ import EmployeeSettings from "./pages/employee/Settings";
 import MyTasks from './pages/employee/MyTasks';
 import Documents from './pages/admin/Documents';
 import Blog from './pages/admin/Blog';
+import BlogList from './pages/admin/BlogList';
+import BlogPreview from './pages/admin/BlogPreview';
 
 const ProtectedRoute = ({ children, role }) => {
   const token = localStorage.getItem('token');
@@ -75,7 +77,11 @@ const Mainrouts = () => {
       <Route path="/admin/salary" element={<ProtectedRoute role="admin"><SalaryManagement /></ProtectedRoute>} />
       <Route path="/admin/leaves" element={<ProtectedRoute role="admin"><LeaveManagement /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminSettings /></ProtectedRoute>} />
-      <Route path="/admin/blog" element={<ProtectedRoute role="admin"><Blog /></ProtectedRoute>} />
+      <Route path="/admin/blog" element={<ProtectedRoute role="admin"><Navigate to="/admin/blog/create" /></ProtectedRoute>} />
+      <Route path="/admin/blog/create" element={<ProtectedRoute role="admin"><Blog /></ProtectedRoute>} />
+      <Route path="/admin/blog/list" element={<ProtectedRoute role="admin"><BlogList /></ProtectedRoute>} />
+      <Route path="/admin/blog/edit/:id" element={<ProtectedRoute role="admin"><Blog /></ProtectedRoute>} />
+      <Route path="/admin/blog/preview/:id" element={<ProtectedRoute role="admin"><BlogPreview /></ProtectedRoute>} />
       <Route path="/admin/messages" element={<ProtectedRoute role="admin"><Messages /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Reports /></ProtectedRoute>} />
 

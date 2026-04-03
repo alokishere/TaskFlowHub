@@ -23,6 +23,7 @@ const AdminSidebar = ({ onClose }) => {
   const [openMenus, setOpenMenus] = useState({
     employees: location.pathname.includes("/admin/employees"),
     projects: location.pathname.includes("/admin/projects"),
+    blog: location.pathname.includes("/admin/blog"),
   });
 
   const toggleMenu = (menu) => {
@@ -206,14 +207,46 @@ const AdminSidebar = ({ onClose }) => {
           <MessageSquare size={20} />
           <span>Messages</span>
         </NavLink>
-        <NavLink
-          to="/admin/blog"
-          className={({ isActive }) => menuClass(isActive)}
-          onClick={handleNavClick}
-        >
-          <PenBox size={20} />
-          <span>Blog</span>
-        </NavLink>
+        <div>
+          <button
+            onClick={() => toggleMenu("blog")}
+            className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
+              location.pathname.includes("/admin/blog")
+                ? "text-purple-600 bg-purple-50/30"
+                : "text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <PenBox size={20} />
+              <span>Blog</span>
+            </div>
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-300 ${openMenus.blog ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          <div
+            className={`overflow-hidden transition-all duration-300 ${openMenus.blog ? "max-h-40 mt-1" : "max-h-0"}`}
+          >
+            <NavLink
+              to="/admin/blog/create"
+              className={({ isActive }) => subMenuClass(isActive)}
+              onClick={handleNavClick}
+            >
+              <PlusSquare size={16} />
+              <span>Create Blog</span>
+            </NavLink>
+            <NavLink
+              to="/admin/blog/list"
+              className={({ isActive }) => subMenuClass(isActive)}
+              onClick={handleNavClick}
+            >
+              <List size={16} />
+              <span>Blog List</span>
+            </NavLink>
+          </div>
+        </div>
 
         <NavLink
           to="/admin/settings"
