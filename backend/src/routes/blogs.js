@@ -16,14 +16,14 @@ const blogUpload = upload.fields([
   { name: 'metaImage', maxCount: 1 }
 ]);
 
-router.use(requireAuth);
-router.use(requireAdmin);
-
-router.post('/create', blogUpload, createBlog);
+// PUBLIC ROUTES (no auth)
 router.get('/get', getAllBlogs);
 router.get('/get/:id', getBlogById);
-router.put('/update/:id', blogUpload, updateBlog);
-router.patch('/status/:id', updateBlogStatus);
-router.delete('/delete/:id', deleteBlog);
+
+// PROTECTED ROUTES
+router.post('/create', requireAuth, requireAdmin, blogUpload, createBlog);
+router.put('/update/:id', requireAuth, requireAdmin, blogUpload, updateBlog);
+router.patch('/status/:id', requireAuth, requireAdmin, updateBlogStatus);
+router.delete('/delete/:id', requireAuth, requireAdmin, deleteBlog);
 
 module.exports = router;
