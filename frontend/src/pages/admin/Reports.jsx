@@ -1,51 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Layout from '../../components/Layout';
-import { BarChart3, PieChart, Users, Briefcase, FileCheck, DollarSign } from 'lucide-react';
-import API from '../../services/api';
+import { Users, Briefcase, FileCheck, DollarSign } from 'lucide-react';
+import { useReportsStats } from '../../hooks/useQueries';
 
 const Reports = () => {
-  const [stats, setStats] = useState({
-    employeesByDept: {},
-    projectsByStatus: {},
-    totalPayroll: 0,
-    leaveSummary: { pending: 0, approved: 0, rejected: 0 }
-  });
+  const { data: stats, isLoading } = useReportsStats();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [empRes, projRes, salaryRes, leaveRes] = await Promise.all([
-          API.get('/users'),
-          API.get('/projects'),
-          API.get('/salaries/all'),
-          API.get('/leaves/all')
-        ]);
-
-        const employees = empRes.data.data;
-        const projects = projRes.data.data;
-        const salaries = salaryRes.data.data;
-        const leaves = leaveRes.data.data;
-
-        // Group by Dept
-        const deptMap = {};
-        employees.forEach(e => deptMap[e.department] = (deptMap[e.department] || 0) + 1);
-
-        // Group Projects
-        const statusMap = { pending: 0, 'in-progress': 0, completed: 0 };
-        projects.forEach(p => statusMap[p.status]++);
-
-        // Payroll
-        const payroll = salaries.reduce((acc, s) => acc + s.amount, 0);
-
-        // Leaves
-        const leaveMap = { pending: 0, approved: 0, rejected: 0 };
-        leaves.forEach(l => leaveMap[l.status]++);
-
-        setStats({ employeesByDept: deptMap, projectsByStatus: statusMap, totalPayroll: payroll, leaveSummary: leaveMap });
-      } catch (err) { console.error(err); }
-    };
-    fetchStats();
-  }, []);
+  if (isLoading) return <Layout role="admin"><div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" /></div></Layout>;
+  if (!stats) return <Layout role="admin">No data available</Layout>;
 
   return (
     <Layout role="admin">

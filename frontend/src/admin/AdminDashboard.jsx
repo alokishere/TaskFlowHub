@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -26,18 +26,11 @@ import {
   Activity,
   RefreshCw
 } from 'lucide-react';
-import API, { imageBaseUrl } from '../services/api';
+import { imageBaseUrl } from '../services/api';
+import { useAdminDashboardData } from '../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
 
 const CHART_COLORS = ['#7C3AED', '#2563EB', '#F97316', '#10B981', '#EF4444', '#06B6D4'];
-
-const INITIAL_STATS = {
-  totalEmployees: 0,
-  activeProjects: 0,
-  completedProjects: 0,
-  pendingLeaves: 0,
-  attendanceToday: 0,
-  totalAttendanceToday: 0
-};
 
 const formatLabel = (value = '') =>
   value
@@ -58,129 +51,97 @@ const buildLastSevenDays = () => {
 };
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState(INITIAL_STATS);
-  const [recentEmployees, setRecentEmployees] = useState([]);
-  const [recentLeaves, setRecentLeaves] = useState([]);
-  const [departmentChart, setDepartmentChart] = useState([]);
-  const [projectStatusChart, setProjectStatusChart] = useState([]);
-  const [leaveStatusChart, setLeaveStatusChart] = useState([]);
-  const [attendanceTrend, setAttendanceTrend] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
+  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useAdminDashboardData();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const attendanceRate = useMemo(() => {
-    if (!stats.totalAttendanceToday) return 0;
-    return Math.round((stats.attendanceToday / stats.totalAttendanceToday) * 100);
-  }, [stats.attendanceToday, stats.totalAttendanceToday]);
+  const processedData = useMemo(() => {
+    if (!data) return null;
 
-  const fetchDashboardData = useCallback(async () => {
-    setError('');
-    try {
-      const [empRes, projRes, leaveRes, attendanceRes] = await Promise.all([
-        API.get('/users'),
-        API.get('/projects'),
-        API.get('/leaves/all'),
-        API.get('/attendance/all')
-      ]);
+    const { employees, projects, leaves, attendanceEntries } = data;
+    const todayKey = new Date().toISOString().slice(0, 10);
 
-      const employees = empRes.data?.data || [];
-      const projects = projRes.data?.data || [];
-      const leaves = leaveRes.data?.data || [];
-      const attendanceEntries = attendanceRes.data?.data || [];
-      const todayKey = new Date().toISOString().slice(0, 10);
+    const departmentMap = employees.reduce((acc, employee) => {
+      const key = employee.department || 'Unassigned';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
 
-      const departmentMap = employees.reduce((acc, employee) => {
-        const key = employee.department || 'Unassigned';
+    const projectMap = projects.reduce(
+      (acc, project) => {
+        const key = project.status || 'pending';
         acc[key] = (acc[key] || 0) + 1;
         return acc;
-      }, {});
+      },
+      { pending: 0, 'in-progress': 0, completed: 0 }
+    );
 
-      const projectMap = projects.reduce(
-        (acc, project) => {
-          const key = project.status || 'pending';
-          acc[key] = (acc[key] || 0) + 1;
-          return acc;
-        },
-        { pending: 0, 'in-progress': 0, completed: 0 }
-      );
-
-      const leaveMap = leaves.reduce(
-        (acc, leave) => {
-          const key = leave.status || 'pending';
-          acc[key] = (acc[key] || 0) + 1;
-          return acc;
-        },
-        { pending: 0, approved: 0, rejected: 0 }
-      );
-
-      const dailyTrendMap = buildLastSevenDays().reduce((acc, day) => {
-        acc[day.key] = { ...day };
+    const leaveMap = leaves.reduce(
+      (acc, leave) => {
+        const key = leave.status || 'pending';
+        acc[key] = (acc[key] || 0) + 1;
         return acc;
-      }, {});
+      },
+      { pending: 0, approved: 0, rejected: 0 }
+    );
 
-      attendanceEntries.forEach((entry) => {
-        if (!entry?.date || !dailyTrendMap[entry.date]) {
-          return;
-        }
-        if (entry.status === 'present') {
-          dailyTrendMap[entry.date].present += 1;
-        }
-      });
+    const dailyTrendMap = buildLastSevenDays().reduce((acc, day) => {
+      acc[day.key] = { ...day };
+      return acc;
+    }, {});
 
-      const todayAttendance = attendanceEntries.filter((entry) => entry.date === todayKey);
+    attendanceEntries.forEach((entry) => {
+      if (!entry?.date || !dailyTrendMap[entry.date]) {
+        return;
+      }
+      if (entry.status === 'present') {
+        dailyTrendMap[entry.date].present += 1;
+      }
+    });
 
-      setStats({
+    const todayAttendance = attendanceEntries.filter((entry) => entry.date === todayKey);
+    const attendanceTodayCount = todayAttendance.filter((entry) => entry.status === 'present').length;
+    const totalAttendanceToday = todayAttendance.length;
+    const attendanceRate = totalAttendanceToday ? Math.round((attendanceTodayCount / totalAttendanceToday) * 100) : 0;
+
+    return {
+      stats: {
         totalEmployees: employees.length,
         activeProjects: projectMap['in-progress'] || 0,
         completedProjects: projectMap.completed || 0,
         pendingLeaves: leaveMap.pending || 0,
-        attendanceToday: todayAttendance.filter((entry) => entry.status === 'present').length,
-        totalAttendanceToday: todayAttendance.length
-      });
+        attendanceToday: attendanceTodayCount,
+        totalAttendanceToday,
+        attendanceRate
+      },
+      recentEmployees: employees.slice(0, 5),
+      recentLeaves: leaves.slice(0, 5),
+      departmentChart: Object.entries(departmentMap)
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => right.count - left.count),
+      projectStatusChart: Object.entries(projectMap).map(([name, value]) => ({ name: formatLabel(name), value })),
+      leaveStatusChart: Object.entries(leaveMap).map(([name, value]) => ({ name: formatLabel(name), value })),
+      attendanceTrend: Object.values(dailyTrendMap).map((day) => ({
+        day: day.label,
+        present: day.present
+      }))
+    };
+  }, [data]);
 
-      setRecentEmployees(employees.slice(0, 5));
-      setRecentLeaves(leaves.slice(0, 5));
-
-      setDepartmentChart(
-        Object.entries(departmentMap)
-          .map(([name, count]) => ({ name, count }))
-          .sort((left, right) => right.count - left.count)
-      );
-
-      setProjectStatusChart(
-        Object.entries(projectMap).map(([name, value]) => ({ name: formatLabel(name), value }))
-      );
-
-      setLeaveStatusChart(
-        Object.entries(leaveMap).map(([name, value]) => ({ name: formatLabel(name), value }))
-      );
-
-      setAttendanceTrend(
-        Object.values(dailyTrendMap).map((day) => ({
-          day: day.label,
-          present: day.present
-        }))
-      );
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Unable to load dashboard metrics right now.');
-      console.error(requestError);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
+  };
 
   const renderChartPlaceholder = (message) => (
     <div className="flex h-65 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm font-medium text-gray-500">
       {message}
     </div>
   );
+
+  if (isLoading) return <Layout role="admin"><div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" /></div></Layout>;
+
+  const { stats, recentEmployees, recentLeaves, departmentChart, projectStatusChart, leaveStatusChart, attendanceTrend } = processedData;
 
   return (
     <Layout role="admin">
@@ -194,7 +155,7 @@ const AdminDashboard = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={fetchDashboardData}
+            onClick={handleRefresh}
             className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-200 hover:text-purple-700"
             aria-label="Refresh admin dashboard data"
           >
@@ -218,7 +179,7 @@ const AdminDashboard = () => {
 
       {error ? (
         <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="status" aria-live="polite">
-          {error}
+          {error.message || 'Unable to load dashboard metrics right now.'}
         </div>
       ) : null}
 
@@ -245,7 +206,7 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            renderChartPlaceholder(loading ? 'Loading chart...' : 'No department data available')
+            renderChartPlaceholder('No department data available')
           )}
         </section>
 
@@ -274,7 +235,7 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            renderChartPlaceholder(loading ? 'Loading chart...' : 'No project status data available')
+            renderChartPlaceholder('No project status data available')
           )}
           <div className="mt-4 flex flex-wrap gap-3">
             {projectStatusChart.map((entry, index) => (
@@ -297,7 +258,7 @@ const AdminDashboard = () => {
             <h3 className="text-lg font-bold text-gray-800">Attendance Trend (7 days)</h3>
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
               <Activity size={14} />
-              Today: {attendanceRate}% present
+              Today: {stats.attendanceRate}% present
             </span>
           </div>
           {attendanceTrend.some((entry) => entry.present > 0) ? (
@@ -319,7 +280,7 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            renderChartPlaceholder(loading ? 'Loading chart...' : 'No attendance entries for the last 7 days')
+            renderChartPlaceholder('No attendance entries for the last 7 days')
           )}
         </section>
 
@@ -342,7 +303,7 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            renderChartPlaceholder(loading ? 'Loading chart...' : 'No leave requests available')
+            renderChartPlaceholder('No leave requests available')
           )}
         </section>
       </div>
@@ -384,7 +345,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
             ))}
-            {!loading && recentEmployees.length === 0 ? (
+            {recentEmployees.length === 0 ? (
               <p className="py-10 text-center text-gray-400">No employees found</p>
             ) : null}
           </div>
@@ -428,7 +389,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
             ))}
-            {!loading && recentLeaves.length === 0 ? (
+            {recentLeaves.length === 0 ? (
               <p className="py-10 text-center text-gray-400">No leave requests available</p>
             ) : null}
           </div>

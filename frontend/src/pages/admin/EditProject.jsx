@@ -2,56 +2,57 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { ArrowLeft, Briefcase, Calendar, Users, MessageSquare, Save, Loader2 } from 'lucide-react';
-import API from '../../services/api';
-import { imageBaseUrl } from '../../services/api';
+import API, { imageBaseUrl } from '../../services/api';
+import { useEmployees, useProjectDetails } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const EditProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [employees, setEmployees] = useState([]);
+  const queryClient = useQueryClient();
+
+  const { data: employees = [], isLoading: empsLoading } = useEmployees();
+  const { data: project, isLoading: projLoading } = useProjectDetails(id);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     deadline: '',
     status: 'pending'
   });
-  const [assignments, setAssignments] = useState([]); // [{ userId, message }]
+  const [assignments, setAssignments] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [empRes, projRes] = await Promise.all([
-          API.get('/users'),
-          API.get(`/projects/${id}`)
-        ]);
-        setEmployees(empRes.data.data);
-        
-        const proj = projRes.data.data;
-        setFormData({
-          title: proj.title,
-          description: proj.description,
-          deadline: proj.deadline.split('T')[0],
-          status: proj.status
-        });
-        
-        // Map existing tasks to assignments
-        const existingAssignments = proj.tasks.map(t => ({
-          userId: t.assignedTo._id,
-          message: t.message,
-          taskId: t._id // Keep track of task ID if needed
-        }));
-        setAssignments(existingAssignments);
-      } catch (err) {
-        console.error(err);
-        alert('Failed to fetch project data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id]);
+    if (project) {
+      setFormData({
+        title: project.title,
+        description: project.description,
+        deadline: project.deadline.split('T')[0],
+        status: project.status
+      });
+      
+      const existingAssignments = project.tasks.map(t => ({
+        userId: t.assignedTo._id,
+        message: t.message,
+        taskId: t._id
+      }));
+      setAssignments(existingAssignments);
+    }
+  }, [project]);
+
+  const updateProjectMutation = useMutation({
+    mutationFn: async (data) => {
+      await API.patch(`/projects/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      navigate('/admin/projects');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to update project');
+    }
+  });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,27 +70,21 @@ const EditProject = () => {
     setAssignments(assignments.map(a => a.userId === userId ? { ...a, message } : a));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (assignments.length === 0) {
       return alert('Please assign at least one employee');
     }
-    setSaving(true);
-
-    try {
-      await API.patch(`/projects/${id}`, {
-        ...formData,
-        assignments
-      });
-      navigate('/admin/projects');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update project');
-    } finally {
-      setSaving(false);
-    }
+    updateProjectMutation.mutate({
+      ...formData,
+      assignments
+    });
   };
 
-  if (loading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-purple-600" size={40} /></div></Layout>;
+  const isLoading = empsLoading || projLoading;
+
+  if (isLoading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-purple-600" size={40} /></div></Layout>;
+  if (!project) return <Layout role="admin">Project not found</Layout>;
 
   return (
     <Layout role="admin">
@@ -249,10 +244,10 @@ const EditProject = () => {
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={updateProjectMutation.isPending}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-widest py-5 rounded-3xl transition-all shadow-xl shadow-purple-100 disabled:opacity-70 flex items-center justify-center gap-3"
           >
-            {saving ? <><Loader2 className="animate-spin" size={18} /> Saving Changes...</> : <><Save size={18} /> Save Changes</>}
+            {updateProjectMutation.isPending ? <><Loader2 className="animate-spin" size={18} /> Saving Changes...</> : <><Save size={18} /> Save Changes</>}
           </button>
         </div>
       </form>

@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import {
   ArrowLeft,
-  Briefcase,
   Users,
   CheckCircle,
   Trash2,
@@ -11,37 +10,32 @@ import {
   Activity
 } from 'lucide-react';
 import API, { imageBaseUrl } from '../../services/api';
+import { useProjectDetails } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const todayKey = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
-  const fetchData = async () => {
-    try {
-      const { data } = await API.get(`/projects/${id}`);
-      setData(data.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading } = useProjectDetails(id);
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
+  const deleteProjMutation = useMutation({
+    mutationFn: async () => {
+      await API.delete(`/projects/${id}`);
+    },
+    onSuccess: () => {
+      navigate('/admin/projects');
+    },
+    onError: () => {
+      alert('Failed to delete project');
+    },
+  });
 
-  const deleteProj = async () => {
+  const deleteProj = () => {
     if (window.confirm('Delete project?')) {
-      try {
-        await API.delete(`/projects/${id}`);
-        navigate('/admin/projects');
-      } catch (err) {
-        alert('Failed to delete project');
-      }
+      deleteProjMutation.mutate();
     }
   };
 
@@ -50,7 +44,8 @@ const ProjectDetails = () => {
     return task.status === 'completed' ? 100 : 0;
   };
 
-  if (loading) return <Layout role="admin">Loading...</Layout>;
+  if (isLoading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div></Layout>;
+  if (!data) return <Layout role="admin">Project not found</Layout>;
 
   return (
     <Layout role="admin">
@@ -61,7 +56,7 @@ const ProjectDetails = () => {
           </button>
           <h2 className="text-2xl font-bold text-gray-800">Project Details</h2>
         </div>
-        <button onClick={deleteProj} className="rounded-lg bg-red-100 p-2 text-red-600">
+        <button onClick={deleteProj} disabled={deleteProjMutation.isPending} className="rounded-lg bg-red-100 p-2 text-red-600">
           <Trash2 size={18} />
         </button>
       </div>

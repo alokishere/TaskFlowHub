@@ -1,29 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import API, { imageBaseUrl } from '../../services/api';
 import { Search, Eye, Edit, Trash2, Power, FileText } from 'lucide-react';
+import { useBlogs } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const BlogList = () => {
-  const [blogs, setBlogs] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-
-  const fetchBlogs = async () => {
-    try {
-      const { data } = await API.get('/blogs/get');
-      setBlogs(data.data || []);
-    } catch (error) {
-      console.error(error);
-      alert('Failed to fetch blogs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBlogs();
-  }, []);
+  const queryClient = useQueryClient();
+  const { data: blogs = [], isLoading } = useBlogs();
 
   const filteredBlogs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -37,27 +23,40 @@ const BlogList = () => {
     );
   }, [blogs, search]);
 
-  const deleteBlog = async (id) => {
-    if (!window.confirm('Delete this blog permanently?')) return;
-
-    try {
+  const deleteBlogMutation = useMutation({
+    mutationFn: async (id) => {
       await API.delete(`/blogs/delete/${id}`);
-      setBlogs((prev) => prev.filter((blog) => blog._id !== id));
-    } catch (error) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blogs'] });
+    },
+    onError: () => {
       alert('Failed to delete blog');
-    }
-  };
+    },
+  });
 
-  const toggleActive = async (id, isActive) => {
-    try {
-      const { data } = await API.patch(`/blogs/status/${id}`, { isActive: !isActive });
-      setBlogs((prev) => prev.map((blog) => (blog._id === id ? data.data : blog)));
-    } catch (error) {
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }) => {
+      await API.patch(`/blogs/status/${id}`, { isActive: !isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blogs'] });
+    },
+    onError: () => {
       alert('Failed to update blog status');
-    }
+    },
+  });
+
+  const deleteBlog = (id) => {
+    if (!window.confirm('Delete this blog permanently?')) return;
+    deleteBlogMutation.mutate(id);
   };
 
-  if (loading) {
+  const toggleActive = (id, isActive) => {
+    toggleActiveMutation.mutate({ id, isActive });
+  };
+
+  if (isLoading) {
     return (
       <Layout role="admin">
         <div className="flex h-full items-center justify-center">
@@ -139,6 +138,7 @@ const BlogList = () => {
                 <button
                   type="button"
                   onClick={() => toggleActive(blog._id, blog.isActive)}
+                  disabled={toggleActiveMutation.isPending}
                   className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${blog.isActive ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
                 >
                   <Power size={13} />
@@ -164,6 +164,7 @@ const BlogList = () => {
                 <button
                   type="button"
                   onClick={() => deleteBlog(blog._id)}
+                  disabled={deleteBlogMutation.isPending}
                   className="inline-flex items-center gap-1 rounded-lg bg-red-100 px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-200"
                 >
                   <Trash2 size={13} />
@@ -175,7 +176,7 @@ const BlogList = () => {
         ))}
       </div>
 
-      {filteredBlogs.length === 0 && (
+      {!isLoading && filteredBlogs.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center text-sm text-slate-500">
           No blogs found.
         </div>

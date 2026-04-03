@@ -3,12 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { ArrowLeft, User, Mail, Phone, Briefcase, DollarSign, Upload } from 'lucide-react';
 import API from '../../services/api';
+import { useEmployeeDetails } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const EditEmployee = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: employee, isLoading: fetching } = useEmployeeDetails(id);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,27 +23,31 @@ const EditEmployee = () => {
   const [image, setImage] = useState(null);
 
   useEffect(() => {
-    const fetchEmployee = async () => {
-      try {
-        const { data } = await API.get(`/users/${id}`);
-        const emp = data.data;
-        setFormData({
-          name: emp.name,
-          email: emp.email,
-          mobile: emp.mobile,
-          role: emp.role,
-          department: emp.department,
-          salary: emp.salary,
-        });
-      } catch (err) {
-        alert('Failed to fetch employee details');
-        navigate('/admin/employees');
-      } finally {
-        setFetching(false);
-      }
-    };
-    fetchEmployee();
-  }, [id, navigate]);
+    if (employee) {
+      setFormData({
+        name: employee.name,
+        email: employee.email,
+        mobile: employee.mobile,
+        role: employee.role,
+        department: employee.department,
+        salary: employee.salary,
+      });
+    }
+  }, [employee]);
+
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async (data) => {
+      await API.put(`/users/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee', id] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      navigate('/admin/employees');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to update employee');
+    },
+  });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -50,25 +57,16 @@ const EditEmployee = () => {
     setImage(e.target.files[0]);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
     const data = new FormData();
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
     if (image) data.append('image', image);
-
-    try {
-      await API.put(`/users/${id}`, data);
-      navigate('/admin/employees');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update employee');
-    } finally {
-      setLoading(false);
-    }
+    updateEmployeeMutation.mutate(data);
   };
 
-  if (fetching) return <Layout role="admin"><div className="py-20 text-center">Loading...</div></Layout>;
+  if (fetching) return <Layout role="admin"><div className="py-20 text-center"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600 mx-auto" /></div></Layout>;
+  if (!employee) return <Layout role="admin">Not found</Layout>;
 
   return (
     <Layout role="admin">
@@ -190,10 +188,10 @@ const EditEmployee = () => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={updateEmployeeMutation.isPending}
           className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-purple-100 disabled:opacity-70"
         >
-          {loading ? 'Updating...' : 'Save Changes'}
+          {updateEmployeeMutation.isPending ? 'Updating...' : 'Save Changes'}
         </button>
       </form>
     </Layout>

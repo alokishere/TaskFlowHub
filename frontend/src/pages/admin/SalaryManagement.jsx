@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Layout from '../../components/Layout';
-import { DollarSign, Search, Plus, History, Calendar, CheckCircle } from 'lucide-react';
-import API from '../../services/api';
-import { imageBaseUrl } from '../../services/api';
+import { DollarSign, Plus, History, Calendar } from 'lucide-react';
+import API, { imageBaseUrl } from '../../services/api';
+import { useEmployees, useSalaryHistory } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SalaryManagement = () => {
-  const [employees, setEmployees] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     month: new Date().getMonth() + 1,
@@ -17,45 +15,35 @@ const SalaryManagement = () => {
     note: ''
   });
 
-  const fetchEmployees = async () => {
-    try {
-      const { data } = await API.get('/users');
-      setEmployees(data.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const queryClient = useQueryClient();
+  const { data: employees = [] } = useEmployees();
+  const { data: history = [], isLoading: historyLoading } = useSalaryHistory(selectedEmp?.id);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const viewHistory = async (emp) => {
-    setSelectedEmp(emp);
-    setLoading(true);
-    try {
-      const { data } = await API.get(`/salaries/${emp.id}`);
-      setHistory(data.data);
-      setFormData({ ...formData, amount: emp.salary });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePayment = async (e) => {
-    e.preventDefault();
-    try {
-      await API.post('/salaries', {
-        userId: selectedEmp.id,
-        ...formData
-      });
+  const addPaymentMutation = useMutation({
+    mutationFn: async (paymentData) => {
+      await API.post('/salaries', paymentData);
+    },
+    onSuccess: () => {
       setShowModal(false);
-      viewHistory(selectedEmp);
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['salaryHistory', selectedEmp?.id] });
+    },
+    onError: () => {
       alert('Failed to add payment record');
-    }
+    },
+  });
+
+  const viewHistory = (emp) => {
+    setSelectedEmp(emp);
+    setFormData({ ...formData, amount: emp.salary });
+  };
+
+  const handlePayment = (e) => {
+    e.preventDefault();
+    if (!selectedEmp) return;
+    addPaymentMutation.mutate({
+      userId: selectedEmp.id,
+      ...formData
+    });
   };
 
   return (
@@ -151,8 +139,13 @@ const SalaryManagement = () => {
                       ))}
                     </tbody>
                   </table>
-                  {!loading && history.length === 0 && (
+                  {!historyLoading && history.length === 0 && (
                     <div className="text-center py-10 text-gray-400">No payment records found.</div>
+                  )}
+                  {historyLoading && (
+                    <div className="flex justify-center py-10">
+                       <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-purple-600" />
+                    </div>
                   )}
                 </div>
               </div>
@@ -224,6 +217,7 @@ const SalaryManagement = () => {
                 </button>
                 <button 
                   type="submit"
+                  disabled={addPaymentMutation.isPending}
                   className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-3 rounded-xl shadow-lg shadow-purple-100 transition-all"
                 >
                   Pay Salary

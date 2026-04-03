@@ -1,47 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Search, Plus, Edit, Trash2, Lock, Unlock, MoreHorizontal } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Lock, Unlock } from 'lucide-react';
 import API from '../../services/api';
 import { imageBaseUrl } from '../../services/api';
+import { useEmployees } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 const EmployeeList = () => {
-  const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState('');
   const [department, setDepartment] = useState('');
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchEmployees = async () => {
-    try {
-      const { data } = await API.get(`/users?search=${search}&department=${department}`);
-      setEmployees(data.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: employees = [], isLoading } = useEmployees(search, department);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [search, department]);
-
-  const toggleStatus = async (id) => {
-    try {
+  const toggleStatusMutation = useMutation({
+    mutationFn: async (id) => {
       await API.patch(`/users/${id}/toggle-status`);
-      fetchEmployees();
-    } catch (err) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+    onError: () => {
       alert('Failed to update status');
-    }
+    },
+  });
+
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async (id) => {
+      await API.delete(`/users/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+    onError: () => {
+      alert('Failed to delete employee');
+    },
+  });
+
+  const toggleStatus = (id) => {
+    toggleStatusMutation.mutate(id);
   };
 
-  const deleteEmployee = async (id) => {
+  const deleteEmployee = (id) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
-      try {
-        await API.delete(`/users/${id}`);
-        fetchEmployees();
-      } catch (err) {
-        alert('Failed to delete employee');
-      }
+      deleteEmployeeMutation.mutate(id);
     }
   };
 
@@ -140,12 +143,14 @@ const EmployeeList = () => {
                       </Link>
                       <button 
                         onClick={() => toggleStatus(emp.id)}
+                        disabled={toggleStatusMutation.isPending}
                         className={`p-2 rounded-lg transition-all ${emp.status === 'active' ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
                       >
                         {emp.status === 'active' ? <Lock size={18} /> : <Unlock size={18} />}
                       </button>
                       <button 
                         onClick={() => deleteEmployee(emp.id)}
+                        disabled={deleteEmployeeMutation.isPending}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 size={18} />
@@ -156,8 +161,13 @@ const EmployeeList = () => {
               ))}
             </tbody>
           </table>
-          {!loading && employees.length === 0 && (
+          {!isLoading && employees.length === 0 && (
             <div className="text-center py-20 text-gray-500">No employees found.</div>
+          )}
+          {isLoading && (
+            <div className="flex justify-center py-20">
+               <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" />
+            </div>
           )}
         </div>
       </div>

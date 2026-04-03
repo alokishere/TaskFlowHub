@@ -1,10 +1,15 @@
 import React from 'react';
 import Layout from '../../components/Layout';
 import { imageBaseUrl } from '../../services/api';
-import { User, Mail, Phone, Briefcase, DollarSign, Calendar } from 'lucide-react';
+import { Mail, Phone, Briefcase, Calendar } from 'lucide-react';
+import { useEmployeeDetails } from '../../hooks/useQueries';
 
 const Profile = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const localUser = JSON.parse(localStorage.getItem('user'));
+  const { data: user, isLoading } = useEmployeeDetails(localUser?.id);
+
+  if (isLoading) return <Layout role="employee"><div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" /></div></Layout>;
+  if (!user) return <Layout role="employee">User not found</Layout>;
 
   return (
     <Layout role="employee">
@@ -21,7 +26,7 @@ const Profile = () => {
           <div className="flex flex-col md:flex-row gap-8 items-end -mt-12 mb-8">
             <div className="w-32 h-32 bg-white rounded-3xl p-1 shadow-lg">
               <div className="w-full h-full bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 text-4xl font-bold overflow-hidden border border-gray-100">
-                {user.image ? <img src={`${imageBaseUrl}${user.image}`} alt="" className="w-full h-full object-cover" /> : user.name.charAt(0)}
+                {user.image ? <img src={`${imageBaseUrl}${user.image}`} alt={user.name} className="w-full h-full object-cover" /> : user.name.charAt(0)}
               </div>
             </div>
             <div className="flex-1 pb-2">

@@ -1,31 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { ArrowLeft, Briefcase, Calendar, Users, MessageSquare } from 'lucide-react';
 import API from '../../services/api';
 import { imageBaseUrl } from '../../services/api';
+import { useEmployees } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 const AddProject = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState([]);
+  const queryClient = useQueryClient();
+  const { data: employees = [], isLoading } = useEmployees();
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     deadline: '',
   });
-  const [assignments, setAssignments] = useState([]); // [{ userId, message }]
+  const [assignments, setAssignments] = useState([]);
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const { data } = await API.get('/users');
-        setEmployees(data.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchEmployees();
-  }, []);
+  const createProjectMutation = useMutation({
+    mutationFn: async (data) => {
+      await API.post('/projects', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      navigate('/admin/projects');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to create project');
+    },
+  });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,25 +48,18 @@ const AddProject = () => {
     setAssignments(assignments.map(a => a.userId === userId ? { ...a, message } : a));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (assignments.length === 0) {
       return alert('Please assign at least one employee');
     }
-    setLoading(true);
-
-    try {
-      await API.post('/projects', {
-        ...formData,
-        assignments
-      });
-      navigate('/admin/projects');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create project');
-    } finally {
-      setLoading(false);
-    }
+    createProjectMutation.mutate({
+      ...formData,
+      assignments
+    });
   };
+
+  if (isLoading) return <Layout role="admin"><div className="py-20 text-center"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600 mx-auto" /></div></Layout>;
 
   return (
     <Layout role="admin">
@@ -200,10 +198,10 @@ const AddProject = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={createProjectMutation.isPending}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-3xl transition-all shadow-lg shadow-purple-100 disabled:opacity-70"
           >
-            {loading ? 'Creating Project...' : 'Launch Project'}
+            {createProjectMutation.isPending ? 'Creating Project...' : 'Launch Project'}
           </button>
         </div>
       </form>

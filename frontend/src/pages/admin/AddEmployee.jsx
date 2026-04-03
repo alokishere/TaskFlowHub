@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { ArrowLeft, User, Mail, Lock, Phone, Briefcase, DollarSign, Upload } from 'lucide-react';
 import API from '../../services/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +19,19 @@ const AddEmployee = () => {
   });
   const [image, setImage] = useState(null);
 
+  const addEmployeeMutation = useMutation({
+    mutationFn: async (data) => {
+      await API.post('/users', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      navigate('/admin/employees');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to add employee');
+    },
+  });
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -26,22 +40,12 @@ const AddEmployee = () => {
     setImage(e.target.files[0]);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
     const data = new FormData();
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
     if (image) data.append('image', image);
-
-    try {
-      await API.post('/users', data);
-      navigate('/admin/employees');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add employee');
-    } finally {
-      setLoading(false);
-    }
+    addEmployeeMutation.mutate(data);
   };
 
   return (
@@ -185,10 +189,10 @@ const AddEmployee = () => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={addEmployeeMutation.isPending}
           className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-purple-100 disabled:opacity-70"
         >
-          {loading ? 'Adding Employee...' : 'Confirm Registration'}
+          {addEmployeeMutation.isPending ? 'Adding Employee...' : 'Confirm Registration'}
         </button>
       </form>
     </Layout>

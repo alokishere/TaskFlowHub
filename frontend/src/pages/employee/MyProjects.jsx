@@ -1,41 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Layout from '../../components/Layout';
 import { Briefcase, MessageSquare, Check, X } from 'lucide-react';
 import API from '../../services/api';
+import { useMyProjects, useMyTasks } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const MyProjects = () => {
-  const [projects, setProjects] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
+  const { data: tasks = [] } = useMyTasks();
 
-  const fetchData = async () => {
-    try {
-      const [projRes, taskRes] = await Promise.all([
-        API.get('/projects/my-projects'),
-        API.get('/projects/my-tasks')
-      ]);
-
-      setProjects(projRes.data.data || []);
-      setTasks(taskRes.data.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const respondToAssignment = async (taskId, acceptanceStatus) => {
-    try {
+  const respondMutation = useMutation({
+    mutationFn: async ({ taskId, acceptanceStatus }) => {
       await API.patch(`/projects/tasks/${taskId}/respond`, { acceptanceStatus });
-      fetchData();
-    } catch (err) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myProjects'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+    },
+    onError: () => {
       alert('Failed to update assignment response');
-    }
+    },
+  });
+
+  const respondToAssignment = (taskId, acceptanceStatus) => {
+    respondMutation.mutate({ taskId, acceptanceStatus });
   };
+
+  if (projectsLoading) return <Layout role="employee"><div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" /></div></Layout>;
 
   return (
     <Layout role="employee">
@@ -97,14 +89,16 @@ const MyProjects = () => {
                       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                         <button
                           onClick={() => respondToAssignment(task._id, 'accepted')}
-                          className="flex-1 rounded-2xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-700"
+                          disabled={respondMutation.isPending}
+                          className="flex-1 rounded-2xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-50"
                         >
                           <Check size={16} className="inline-block" />
                           <span className="ml-2">Accept</span>
                         </button>
                         <button
                           onClick={() => respondToAssignment(task._id, 'rejected')}
-                          className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-300"
+                          disabled={respondMutation.isPending}
+                          className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-300 disabled:opacity-50"
                         >
                           <X size={16} className="inline-block" />
                           <span className="ml-2">Reject</span>
@@ -126,8 +120,8 @@ const MyProjects = () => {
           );
         })}
 
-        {!loading && projects.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center">
+        {!projectsLoading && projects.length === 0 && (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center col-span-2">
             <Briefcase size={48} className="mx-auto mb-4 text-slate-400" />
             <h3 className="text-xl font-bold text-slate-700">No projects assigned yet</h3>
           </div>

@@ -1,33 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import API, { imageBaseUrl } from '../../services/api';
+import { imageBaseUrl } from '../../services/api';
 import { ArrowLeft, Calendar, Tag, Edit } from 'lucide-react';
+import { useBlogDetails } from '../../hooks/useQueries';
 
 const BlogPreview = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [blog, setBlog] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: blog, isLoading } = useBlogDetails(id);
 
-  useEffect(() => {
-    const fetchBlog = async () => {
-      try {
-        const { data } = await API.get(`/blogs/get/${id}`);
-        setBlog(data.data);
-      } catch (error) {
-        console.error(error);
-        alert('Failed to fetch blog preview');
-        navigate('/admin/blog/list');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBlog();
-  }, [id, navigate]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout role="admin">
         <div className="flex h-full items-center justify-center">

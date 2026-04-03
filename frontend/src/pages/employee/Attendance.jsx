@@ -1,28 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../../components/Layout';
 import {
-  Clock,
   LogIn,
   LogOut,
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Timer,
-  CircleCheck,
-  CircleOff
 } from 'lucide-react';
 import API from '../../services/api';
+import { useMyAttendance, useMyLeaves } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Attendance = () => {
-  const [history, setHistory] = useState([]);
-  const [leaves, setLeaves] = useState([]);
-  const [today, setToday] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const current = new Date();
     return new Date(current.getFullYear(), current.getMonth(), 1);
   });
+
+  const queryClient = useQueryClient();
+  const { data: history = [], isLoading: attendanceLoading } = useMyAttendance();
+  const { data: leaves = [] } = useMyLeaves();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -31,6 +28,32 @@ const Attendance = () => {
 
   const dateKey = (date) => date.toLocaleDateString('en-CA');
   const todayKey = dateKey(now);
+
+  const today = useMemo(() => history.find((entry) => entry.date === todayKey) || null, [history, todayKey]);
+
+  const punchInMutation = useMutation({
+    mutationFn: async () => {
+      await API.post('/attendance/punch-in');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myAttendance'] });
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to punch in');
+    },
+  });
+
+  const punchOutMutation = useMutation({
+    mutationFn: async () => {
+      await API.post('/attendance/punch-out');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myAttendance'] });
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to punch out');
+    },
+  });
 
   const toDateOnly = (value) => {
     const raw = String(value || '').split('T')[0];
@@ -75,50 +98,12 @@ const Attendance = () => {
     return Number(record.workedMinutes) || 0;
   };
 
-  const fetchAttendance = async () => {
-    try {
-      const [attendanceRes, leaveRes] = await Promise.all([
-        API.get('/attendance/my'),
-        API.get('/leaves/my')
-      ]);
-      const attendanceData = attendanceRes.data.data || [];
-      setHistory(attendanceData);
-      setLeaves(leaveRes.data.data || []);
-
-      const todayRecord = attendanceData.find((entry) => entry.date === todayKey);
-      setToday(todayRecord || null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const handlePunchIn = () => {
+    punchInMutation.mutate();
   };
 
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
-
-  useEffect(() => {
-    const todayRecord = history.find((entry) => entry.date === todayKey);
-    setToday(todayRecord || null);
-  }, [history, todayKey]);
-
-  const handlePunchIn = async () => {
-    try {
-      await API.post('/attendance/punch-in');
-      fetchAttendance();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to punch in');
-    }
-  };
-
-  const handlePunchOut = async () => {
-    try {
-      await API.post('/attendance/punch-out');
-      fetchAttendance();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to punch out');
-    }
+  const handlePunchOut = () => {
+    punchOutMutation.mutate();
   };
 
   const attendanceMap = useMemo(() => {
@@ -212,7 +197,7 @@ const Attendance = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={handlePunchIn}
-              disabled={today?.punchIn}
+              disabled={today?.punchIn || punchInMutation.isPending}
               className={`rounded-2xl border px-6 py-6 text-left transition-all active:scale-95 flex flex-col gap-3 ${
                 today?.punchIn
                   ? 'border-gray-50 bg-gray-50 text-gray-400'
@@ -228,7 +213,7 @@ const Attendance = () => {
 
             <button
               onClick={handlePunchOut}
-              disabled={!today?.punchIn || today?.punchOut}
+              disabled={!today?.punchIn || today?.punchOut || punchOutMutation.isPending}
               className={`rounded-2xl border px-6 py-6 text-left transition-all active:scale-95 flex flex-col gap-3 ${
                 today?.punchOut || !today?.punchIn
                   ? 'border-gray-50 bg-gray-50 text-gray-400'
@@ -396,8 +381,13 @@ const Attendance = () => {
               ))}
             </tbody>
           </table>
-          {!loading && history.length === 0 && (
+          {!attendanceLoading && history.length === 0 && (
             <div className="py-10 text-center text-gray-400">No attendance history yet.</div>
+          )}
+          {attendanceLoading && (
+            <div className="flex justify-center py-10">
+               <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-purple-600" />
+            </div>
           )}
         </div>
       </div>

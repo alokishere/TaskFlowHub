@@ -1,36 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Layout from '../../components/Layout';
 import { FileText, Check, X, Clock, Filter } from 'lucide-react';
 import API from '../../services/api';
 import { imageBaseUrl } from '../../services/api';
+import { useAdminLeaves } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 const LeaveManagement = () => {
-  const [leaves, setLeaves] = useState([]);
   const [status, setStatus] = useState('pending');
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchLeaves = async () => {
-    setLoading(true);
-    try {
-      const { data } = await API.get(`/leaves/all?status=${status}`);
-      setLeaves(data.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: leaves = [], isLoading } = useAdminLeaves(status);
 
-  useEffect(() => {
-    fetchLeaves();
-  }, [status]);
-
-  const handleStatusUpdate = async (id, newStatus) => {
-    try {
+  const updateLeaveStatusMutation = useMutation({
+    mutationFn: async ({ id, newStatus }) => {
       await API.patch(`/leaves/${id}/status`, { status: newStatus });
-      fetchLeaves();
-    } catch (err) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminLeaves'] });
+    },
+    onError: () => {
       alert('Failed to update leave status');
-    }
+    },
+  });
+
+  const handleStatusUpdate = (id, newStatus) => {
+    updateLeaveStatusMutation.mutate({ id, newStatus });
   };
 
   return (
@@ -101,6 +96,7 @@ const LeaveManagement = () => {
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleStatusUpdate(leave._id, 'approved')}
+                          disabled={updateLeaveStatusMutation.isPending}
                           className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all"
                           title="Approve"
                         >
@@ -108,6 +104,7 @@ const LeaveManagement = () => {
                         </button>
                         <button 
                           onClick={() => handleStatusUpdate(leave._id, 'rejected')}
+                          disabled={updateLeaveStatusMutation.isPending}
                           className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all"
                           title="Reject"
                         >
@@ -126,10 +123,15 @@ const LeaveManagement = () => {
               ))}
             </tbody>
           </table>
-          {!loading && leaves.length === 0 && (
+          {!isLoading && leaves.length === 0 && (
             <div className="text-center py-20 text-gray-400 flex flex-col items-center">
               <Clock size={48} className="mb-4 opacity-20" />
               <p>No {status} leave requests found.</p>
+            </div>
+          )}
+          {isLoading && (
+            <div className="flex justify-center py-20">
+               <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" />
             </div>
           )}
         </div>

@@ -1,46 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Layout from '../../components/Layout';
 import { File, Search, Download, User, Calendar, Trash2 } from 'lucide-react';
 import API, { imageBaseUrl } from '../../services/api';
+import { useAllDocuments } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Documents = () => {
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const queryClient = useQueryClient();
+  const { data: documents = [], isLoading } = useAllDocuments();
 
-  const fetchDocs = async () => {
-    try {
-      const { data } = await API.get('/users');
-      const allDocs = [];
-      
-      // Since documents are linked to users, we fetch all users first
-      // In a real large app, we'd have a global /documents/all endpoint
-      // But based on our current simple structure, we'll aggregate or fetch for all users
-      await Promise.all(data.data.map(async (user) => {
-        const docRes = await API.get(`/documents/${user.id}`);
-        docRes.data.data.forEach(doc => {
-          allDocs.push({ ...doc, user });
-        });
-      }));
+  const deleteDocMutation = useMutation({
+    mutationFn: async (id) => {
+      await API.delete(`/documents/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allDocuments'] });
+    },
+    onError: () => { alert('Failed'); }
+  });
 
-      setDocuments(allDocs);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDocs();
-  }, []);
-
-  const deleteDoc = async (id) => {
+  const deleteDoc = (id) => {
     if (window.confirm('Delete document?')) {
-      try {
-        await API.delete(`/documents/${id}`);
-        fetchDocs();
-      } catch (err) { alert('Failed'); }
+      deleteDocMutation.mutate(id);
     }
   };
 
@@ -70,30 +52,36 @@ const Documents = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDocs.map((doc) => (
-            <div key={doc._id} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-purple-200 transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
-                  <File size={24} />
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDocs.map((doc) => (
+              <div key={doc._id} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-purple-200 transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
+                    <File size={24} />
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <a href={`${imageBaseUrl}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="p-2 bg-white text-blue-600 rounded-lg shadow-sm hover:bg-blue-50"><Download size={16}/></a>
+                    <button onClick={() => deleteDoc(doc._id)} disabled={deleteDocMutation.isPending} className="p-2 bg-white text-red-600 rounded-lg shadow-sm hover:bg-red-50"><Trash2 size={16}/></button>
+                  </div>
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                  <a href={`${imageBaseUrl}${doc.fileUrl}`} target="_blank" className="p-2 bg-white text-blue-600 rounded-lg shadow-sm hover:bg-blue-50"><Download size={16}/></a>
-                  <button onClick={() => deleteDoc(doc._id)} className="p-2 bg-white text-red-600 rounded-lg shadow-sm hover:bg-red-50"><Trash2 size={16}/></button>
+                <h4 className="font-bold text-gray-900 mb-1">{doc.docType}</h4>
+                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-4">
+                  <User size={12} /> {doc.user.name}
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase">
+                  <Calendar size={10} /> Uploaded: {new Date(doc.createdAt).toLocaleDateString()}
                 </div>
               </div>
-              <h4 className="font-bold text-gray-900 mb-1">{doc.docType}</h4>
-              <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-4">
-                <User size={12} /> {doc.user.name}
-              </div>
-              <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase">
-                <Calendar size={10} /> Uploaded: {new Date(doc.createdAt).toLocaleDateString()}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {!loading && filteredDocs.length === 0 && (
+        {!isLoading && filteredDocs.length === 0 && (
           <div className="text-center py-20 text-gray-400">
             <File size={48} className="mx-auto mb-4 opacity-20" />
             <p>No documents found matching your search.</p>

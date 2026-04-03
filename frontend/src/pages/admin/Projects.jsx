@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import {
@@ -13,44 +13,45 @@ import {
 } from 'lucide-react';
 import API from '../../services/api';
 import { imageBaseUrl } from '../../services/api';
+import { useProjects } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Projects = () => {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: projects = [], isLoading } = useProjects();
 
-  const fetchProjects = async () => {
-    try {
-      const { data } = await API.get('/projects');
-      setProjects(data.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (id) => {
+      await API.delete(`/projects/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+    onError: () => {
+      alert('Failed to delete project');
+    },
+  });
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const deleteProject = async (id) => {
-    if (window.confirm('Are you sure you want to delete this project? This will also delete all associated tasks.')) {
-      try {
-        await API.delete(`/projects/${id}`);
-        setProjects(projects.filter((project) => project._id !== id));
-      } catch (err) {
-        alert('Failed to delete project');
-      }
-    }
-  };
-
-  const updateStatus = async (id, status) => {
-    try {
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
       await API.patch(`/projects/${id}/status`, { status });
-      fetchProjects();
-    } catch (err) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+    onError: () => {
       alert('Failed to update project status');
+    },
+  });
+
+  const deleteProject = (id) => {
+    if (window.confirm('Are you sure you want to delete this project? This will also delete all associated tasks.')) {
+      deleteProjectMutation.mutate(id);
     }
+  };
+
+  const updateStatus = (id, status) => {
+    updateStatusMutation.mutate({ id, status });
   };
 
   const getStatusColor = (status) => {
@@ -64,7 +65,7 @@ const Projects = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout role="admin">
         <div className="flex h-full items-center justify-center">
@@ -102,6 +103,7 @@ const Projects = () => {
               </div>
               <button
                 onClick={() => deleteProject(project._id)}
+                disabled={deleteProjectMutation.isPending}
                 className="rounded-lg p-2 text-gray-400 transition-all hover:bg-red-50 hover:text-red-500"
                 aria-label="Delete project"
               >
@@ -198,6 +200,7 @@ const Projects = () => {
             <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
+                disabled={updateStatusMutation.isPending}
                 onClick={() => updateStatus(project._id, 'pending')}
                 className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition ${project.status === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-600'}`}
               >
@@ -205,6 +208,7 @@ const Projects = () => {
               </button>
               <button
                 type="button"
+                disabled={updateStatusMutation.isPending}
                 onClick={() => updateStatus(project._id, 'in-progress')}
                 className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition ${project.status === 'in-progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600'}`}
               >
@@ -212,6 +216,7 @@ const Projects = () => {
               </button>
               <button
                 type="button"
+                disabled={updateStatusMutation.isPending}
                 onClick={() => updateStatus(project._id, 'completed')}
                 className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition ${project.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-600'}`}
               >

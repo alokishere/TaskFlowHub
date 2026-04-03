@@ -1,55 +1,46 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../../components/Layout';
-import { Search, Send, User, Clock, ArrowLeft } from 'lucide-react';
+import { Send, Clock, ArrowLeft } from 'lucide-react';
 import API, { imageBaseUrl } from '../../services/api';
+import { useEmployees, useMessages } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Messages = () => {
-  const [employees, setEmployees] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   const chatEndRef = useRef(null);
   const user = JSON.parse(localStorage.getItem('user'));
+  const queryClient = useQueryClient();
+
+  const { data: employees = [] } = useEmployees();
+  const { data: messages = [] } = useMessages(selectedEmp?.id);
 
   useEffect(() => {
-    const fetchEmps = async () => {
-      const { data } = await API.get('/users');
-      setEmployees(data.data);
-      if (data.data.length === 1 && user.role !== 'admin') {
-        setSelectedEmp(data.data[0]);
-        setShowChatOnMobile(true);
-      }
-    };
-    fetchEmps();
-  }, []);
-
-  const fetchMessages = async (empId) => {
-    const { data } = await API.get(`/messages/${empId}`);
-    setMessages(data.data);
-  };
-
-  useEffect(() => {
-    let interval;
-    if (selectedEmp) {
-      fetchMessages(selectedEmp.id);
-      interval = setInterval(() => fetchMessages(selectedEmp.id), 3000);
+    if (employees.length === 1 && user.role !== 'admin' && !selectedEmp) {
+      setSelectedEmp(employees[0]);
+      setShowChatOnMobile(true);
     }
-    return () => clearInterval(interval);
-  }, [selectedEmp]);
+  }, [employees, user.role, selectedEmp]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    try {
-      await API.post('/messages', { receiverId: selectedEmp.id, message: newMessage });
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({ receiverId, message }) => {
+      await API.post('/messages', { receiverId, message });
+    },
+    onSuccess: () => {
       setNewMessage('');
-      fetchMessages(selectedEmp.id);
-    } catch (err) { console.error(err); }
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedEmp?.id] });
+    },
+  });
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedEmp) return;
+    sendMessageMutation.mutate({ receiverId: selectedEmp.id, message: newMessage });
   };
 
   const selectEmployee = (emp) => {
@@ -59,7 +50,6 @@ const Messages = () => {
 
   return (
     <Layout role={user.role}>
-      {/* KEY FIX: outer wrapper must have a fixed/known height so children can flex properly */}
       <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm md:flex-row">
 
         {/* Conversations List */}
@@ -69,7 +59,6 @@ const Messages = () => {
               {user.role === 'admin' ? 'Employees' : 'Administrators'}
             </h3>
           </div>
-          {/* Scrollable employee list */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {employees.map(emp => (
               <button
@@ -78,7 +67,7 @@ const Messages = () => {
                 className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedEmp?.id === emp.id ? 'bg-purple-50 text-purple-600 shadow-sm' : 'hover:bg-gray-50 text-gray-500'}`}
               >
                 <div className="w-10 h-10 bg-white rounded-xl border border-gray-100 flex items-center justify-center font-bold overflow-hidden shadow-sm shrink-0">
-                  {emp.image ? <img src={`${imageBaseUrl}${emp.image}`} className="w-full h-full object-cover" /> : emp.name.charAt(0)}
+                  {emp.image ? <img src={`${imageBaseUrl}${emp.image}`} className="w-full h-full object-cover" alt={emp.name} /> : emp.name.charAt(0)}
                 </div>
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-black truncate">{emp.name}</p>
@@ -98,7 +87,6 @@ const Messages = () => {
         <div className={`flex-1 flex flex-col overflow-hidden bg-gray-50/30 ${!showChatOnMobile || !selectedEmp ? 'hidden md:flex' : 'flex'}`}>
           {selectedEmp ? (
             <>
-              {/* Chat Header — fixed height */}
               <div className="p-4 md:p-6 bg-white border-b border-gray-50 flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => setShowChatOnMobile(false)}
@@ -107,7 +95,7 @@ const Messages = () => {
                   <ArrowLeft size={20} />
                 </button>
                 <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 font-bold overflow-hidden shadow-sm shrink-0">
-                  {selectedEmp.image ? <img src={`${imageBaseUrl}${selectedEmp.image}`} className="w-full h-full object-cover" /> : selectedEmp.name.charAt(0)}
+                  {selectedEmp.image ? <img src={`${imageBaseUrl}${selectedEmp.image}`} className="w-full h-full object-cover" alt={selectedEmp.name} /> : selectedEmp.name.charAt(0)}
                 </div>
                 <div className="min-w-0">
                   <h4 className="font-black text-gray-900 leading-none truncate">{selectedEmp.name}</h4>
@@ -117,8 +105,6 @@ const Messages = () => {
                 </div>
               </div>
 
-              {/* KEY FIX: messages area — flex-1 + min-h-0 allows it to shrink,
-                  overflow-y-auto on THIS div (not a child) makes it scroll */}
               <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 flex flex-col gap-4">
                 {messages.map(m => (
                   <div key={m._id} className={`flex ${m.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
@@ -130,11 +116,9 @@ const Messages = () => {
                     </div>
                   </div>
                 ))}
-                {/* Scroll anchor */}
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Input — fixed at bottom */}
               <form onSubmit={handleSend} className="border-t border-gray-50 bg-white p-3 shrink-0 sm:p-4 md:p-5 lg:p-6">
                 <div className="relative">
                   <input
@@ -146,6 +130,7 @@ const Messages = () => {
                   />
                   <button
                     type="submit"
+                    disabled={sendMessageMutation.isPending}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-purple-600 p-2.5 text-white shadow-lg shadow-purple-200 transition-all hover:bg-purple-700 sm:p-3"
                   >
                     <Send size={16} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { 
@@ -8,6 +8,8 @@ import {
   ChevronLeft, ChevronRight, Timer
 } from 'lucide-react';
 import API, { imageBaseUrl } from '../../services/api';
+import { useEmployeeDetails, useEmployeeDocuments } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ResponsiveContainer,
   PieChart,
@@ -28,9 +30,8 @@ const CHART_COLORS = ['#7C3AED', '#2563EB', '#10B981', '#F97316', '#EF4444', '#0
 const EmployeeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [docs, setDocs] = useState([]);
+  const queryClient = useQueryClient();
+  
   const [showPassModal, setShowPassModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
@@ -39,52 +40,71 @@ const EmployeeDetails = () => {
     return new Date(current.getFullYear(), current.getMonth(), 1);
   });
 
-  const fetchData = async () => {
-    try {
-      const [userRes, docRes] = await Promise.all([
-        API.get(`/users/${id}`),
-        API.get(`/documents/${id}`)
-      ]);
-      setData(userRes.data.data);
-      setDocs(docRes.data.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading: userLoading } = useEmployeeDetails(id);
+  const { data: docs = [], isLoading: docsLoading } = useEmployeeDocuments(id);
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
-
-  const toggleStatus = async () => {
-    try {
+  const toggleStatusMutation = useMutation({
+    mutationFn: async () => {
       await API.patch(`/users/${id}/toggle-status`);
-      fetchData();
-    } catch (err) { alert('Failed'); }
-  };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee', id] });
+    },
+    onError: () => { alert('Failed'); }
+  });
 
-  const deleteEmp = async () => {
-    if (window.confirm('Delete this employee?')) {
-      try {
-        await API.delete(`/users/${id}`);
-        navigate('/admin/employees');
-      } catch (err) { alert('Failed'); }
-    }
-  };
+  const deleteEmpMutation = useMutation({
+    mutationFn: async () => {
+      await API.delete(`/users/${id}`);
+    },
+    onSuccess: () => {
+      navigate('/admin/employees');
+    },
+    onError: () => { alert('Failed'); }
+  });
 
-  const changePass = async (e) => {
-    e.preventDefault();
-    try {
-      await API.patch(`/users/${id}/change-password`, { password: newPassword });
+  const changePassMutation = useMutation({
+    mutationFn: async (password) => {
+      await API.patch(`/users/${id}/change-password`, { password });
+    },
+    onSuccess: () => {
       setShowPassModal(false);
       setNewPassword('');
       alert('Password changed');
-    } catch (err) { alert(err.response?.data?.message); }
+    },
+    onError: (err) => { alert(err.response?.data?.message); }
+  });
+
+  const uploadDocMutation = useMutation({
+    mutationFn: async (formData) => {
+      await API.post('/documents', formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', id] });
+    },
+    onError: () => { alert('Upload failed'); }
+  });
+
+  const deleteDocMutation = useMutation({
+    mutationFn: async (docId) => {
+      await API.delete(`/documents/${docId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', id] });
+    },
+    onError: () => { alert('Delete failed'); }
+  });
+
+  const toggleStatus = () => toggleStatusMutation.mutate();
+  const deleteEmp = () => {
+    if (window.confirm('Delete this employee?')) deleteEmpMutation.mutate();
+  };
+  const changePass = (e) => {
+    e.preventDefault();
+    changePassMutation.mutate(newPassword);
   };
 
-  const handleDocUpload = async (e) => {
+  const handleDocUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const type = prompt('Enter document type (e.g. Aadhaar, PAN):');
@@ -95,18 +115,10 @@ const EmployeeDetails = () => {
     formData.append('employeeId', id);
     formData.append('docType', type);
 
-    try {
-      await API.post('/documents', formData);
-      fetchData();
-    } catch (err) { alert('Upload failed'); }
+    uploadDocMutation.mutate(formData);
   };
 
-  const deleteDoc = async (docId) => {
-    try {
-      await API.delete(`/documents/${docId}`);
-      fetchData();
-    } catch (err) { alert('Delete failed'); }
-  };
+  const deleteDoc = (docId) => deleteDocMutation.mutate(docId);
 
   const calculateProgress = () => {
     if (!data?.tasks || data.tasks.length === 0) return 0;
@@ -284,7 +296,7 @@ const EmployeeDetails = () => {
     return Number((totalHours / attendance.length).toFixed(1));
   }, [data?.attendance]);
 
-  if (loading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div></Layout>;
+  if (userLoading) return <Layout role="admin"><div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div></Layout>;
   if (!data) return <Layout role="admin">Not found</Layout>;
 
   return (
@@ -299,10 +311,10 @@ const EmployeeDetails = () => {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowPassModal(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-600 border border-gray-100 rounded-xl hover:bg-gray-50 font-bold transition-all shadow-sm"><Key size={16}/> Reset Password</button>
-          <button onClick={toggleStatus} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all shadow-sm ${data.status === 'active' ? 'bg-orange-50 text-orange-600 hover:bg-orange-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+          <button onClick={toggleStatus} disabled={toggleStatusMutation.isPending} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all shadow-sm ${data.status === 'active' ? 'bg-orange-50 text-orange-600 hover:bg-orange-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
             {data.status === 'active' ? <><Lock size={16}/> Suspend</> : <><Unlock size={16}/> Activate</>}
           </button>
-          <button onClick={deleteEmp} className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all"><Trash2 size={20}/></button>
+          <button onClick={deleteEmp} disabled={deleteEmpMutation.isPending} className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all"><Trash2 size={20}/></button>
         </div>
       </div>
 
@@ -310,7 +322,7 @@ const EmployeeDetails = () => {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm text-center">
             <div className="w-32 h-32 mx-auto bg-linear-to-br from-purple-50 to-blue-50 rounded-4xl mb-6 overflow-hidden border-4 border-white shadow-xl relative group">
-              {data.image ? <img src={`${imageBaseUrl}${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110"/> : <span className="text-4xl font-black text-purple-600 leading-32">{data.name.charAt(0)}</span>}
+              {data.image ? <img src={`${imageBaseUrl}${data.image}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={data.name}/> : <span className="text-4xl font-black text-purple-600 leading-32">{data.name.charAt(0)}</span>}
               <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white shadow-sm ${data.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             </div>
             <h3 className="text-xl font-black text-gray-900 mb-1">{data.name}</h3>
@@ -345,12 +357,13 @@ const EmployeeDetails = () => {
                     <span className="text-xs font-bold text-gray-700">{doc.docType}</span>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a href={`${imageBaseUrl}${doc.fileUrl}`} target="_blank" className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl"><Download size={14}/></a>
-                    <button onClick={() => deleteDoc(doc._id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl"><Trash2 size={14}/></button>
+                    <a href={`${imageBaseUrl}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl"><Download size={14}/></a>
+                    <button onClick={() => deleteDoc(doc._id)} disabled={deleteDocMutation.isPending} className="p-2 text-red-600 hover:bg-red-50 rounded-xl"><Trash2 size={14}/></button>
                   </div>
                 </div>
               ))}
-              {docs.length === 0 && (
+              {docsLoading && <div className="text-center py-4"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-purple-600 mx-auto" /></div>}
+              {!docsLoading && docs.length === 0 && (
                 <div className="text-center py-6 border-2 border-dashed border-gray-50 rounded-2xl">
                   <p className="text-[10px] font-black text-gray-300 uppercase">No documents</p>
                 </div>
