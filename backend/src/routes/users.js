@@ -16,7 +16,7 @@ router.use(requireAuth);
 
 router.get('/', getAllEmployees);
 router.post('/', requireAdmin, upload.single('image'), createEmployee);
-router.get('/:id', requireAdmin, getEmployeeById);
+router.get('/:id', getEmployeeById);
 router.put('/:id', requireAdmin, upload.single('image'), updateEmployee);
 router.patch('/:id/toggle-status', requireAdmin, toggleStatus);
 router.patch('/:id/change-password', requireAdmin, changePassword);
