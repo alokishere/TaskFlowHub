@@ -23,7 +23,7 @@ const Login = () => {
       if (data.data.user.role === "admin") {
         navigate("/admin");
       } else {
-        navigate("/employee");
+        navigate("/employee/attendance");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
