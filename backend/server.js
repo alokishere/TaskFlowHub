@@ -13,6 +13,7 @@ const salaryRoutes = require('./src/routes/salaries');
 const messageRoutes = require('./src/routes/messages');
 const documentRoutes = require('./src/routes/documents');
 const blogRoutes = require('./src/routes/blogs');
+require('./cron/punchInReminder');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/salaries', salaryRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/push', require('./routes/push'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'API running' });

@@ -1,7 +1,9 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
+const User = require('../models/User');
 const { getLocalDateString } = require('../utils/time');
 const { normalizeStoredPath } = require('../middleware/upload');
+const { sendPushToUsers } = require('../utils/pushNotifications');
 
 const getTaskProgressPercent = (task) => {
   if (typeof task.progressPercent === 'number') {
@@ -59,6 +61,50 @@ const normalizeAssigneeImages = (assignees = []) => assignees.map((assignee) => 
 });
 
 const hasOwn = (payload, key) => Object.prototype.hasOwnProperty.call(payload || {}, key);
+
+const notifyAssignedEmployees = async (project, assignments = []) => {
+  try {
+    const assignedUserIds = (Array.isArray(assignments) ? assignments : [])
+      .map((assignment) => assignment?.userId)
+      .filter(Boolean);
+
+    if (!assignedUserIds.length) return;
+
+    await sendPushToUsers(assignedUserIds, {
+      title: '📌 New Project Assigned',
+      body: `You have been assigned to "${project.title}"`,
+      data: {
+        url: '/employee/my-projects',
+        projectId: String(project._id)
+      }
+    });
+  } catch (error) {
+    console.error('Failed to notify assigned employees:', error.message);
+  }
+};
+
+const notifyAdminsTaskCompleted = async (task, employeeName = 'An employee') => {
+  try {
+    const [project, admins] = await Promise.all([
+      Project.findById(task.projectId).select('title'),
+      User.find({ role: 'admin', status: 'active' }).select('_id')
+    ]);
+
+    const adminIds = admins.map((admin) => admin._id);
+    if (!adminIds.length) return;
+
+    await sendPushToUsers(adminIds, {
+      title: '✅ Task Completed',
+      body: `${employeeName} completed a task for "${project?.title || 'a project'}"`,
+      data: {
+        url: '/admin/projects',
+        projectId: String(task.projectId)
+      }
+    });
+  } catch (error) {
+    console.error('Failed to notify admins for task completion:', error.message);
+  }
+};
 
 const buildAssignmentInput = (assignments = []) => {
   if (!Array.isArray(assignments)) {
@@ -195,6 +241,8 @@ const createProject = async (req, res, next) => {
       }));
       await Task.insertMany(tasks);
     }
+
+    await notifyAssignedEmployees(project, assignments);
 
     res.status(201).json({
       success: true,
@@ -383,6 +431,7 @@ const updateTaskStatus = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
+    const wasCompleted = task.status === 'completed';
     task.status = status;
     if (status === 'completed') {
       task.progressPercent = 100;
@@ -390,6 +439,10 @@ const updateTaskStatus = async (req, res, next) => {
       upsertTodayProgress(task, 100, 'Marked completed');
     }
     await task.save();
+
+    if (!wasCompleted && task.status === 'completed') {
+      await notifyAdminsTaskCompleted(task, req.user.name);
+    }
 
     res.status(200).json({
       success: true,
@@ -426,6 +479,7 @@ const updateTaskProgress = async (req, res, next) => {
 
     const normalizedProgress = Math.max(0, Math.min(100, Math.round(parsedProgress)));
     const normalizedNote = String(note || '').trim();
+    const wasCompleted = task.status === 'completed';
 
     task.progressPercent = normalizedProgress;
     task.progressUpdatedAt = new Date();
@@ -438,6 +492,10 @@ const updateTaskProgress = async (req, res, next) => {
     }
 
     await task.save();
+
+    if (!wasCompleted && task.status === 'completed') {
+      await notifyAdminsTaskCompleted(task, req.user.name);
+    }
 
     res.status(200).json({
       success: true,

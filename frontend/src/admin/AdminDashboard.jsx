@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
+import PushNotificationToggle from '../components/PushNotificationToggle';
 import {
   Users,
   Briefcase,
@@ -55,7 +56,6 @@ const AdminDashboard = () => {
   const { data, isLoading, error } = useAdminDashboardData();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-
   const processedData = useMemo(() => {
     if (!data) return null;
 
@@ -175,6 +175,10 @@ const AdminDashboard = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="mb-8 max-w-sm">
+        <PushNotificationToggle userId={user?.id||user?._id} />
       </div>
 
       {error ? (

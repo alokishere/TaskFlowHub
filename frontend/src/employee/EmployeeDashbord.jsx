@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
+import PushNotificationToggle from '../components/PushNotificationToggle';
 import { Briefcase, Clock, CheckCircle, FileText, RefreshCw } from 'lucide-react';
 import API from '../services/api';
 
@@ -192,6 +193,10 @@ const EmployeeDashboard = () => {
             Refresh
           </button>
         </div>
+      </div>
+
+      <div className="mb-8 max-w-sm">
+        <PushNotificationToggle userId={user?._id} />
       </div>
 
       {error ? (
