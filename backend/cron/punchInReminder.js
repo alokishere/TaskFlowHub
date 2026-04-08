@@ -22,7 +22,7 @@ const punchInReminderTask = cron.schedule(
 );
 
 const punchOutReminderTask = cron.schedule(
-  '41 1 * * 1-6',
+  '41 13 * * 1-6',
   async () => {
     try {
       await sendPushToAll({
