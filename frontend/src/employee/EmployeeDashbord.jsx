@@ -196,7 +196,7 @@ const EmployeeDashboard = () => {
       </div>
 
       <div className="mb-8 max-w-sm">
-        <PushNotificationToggle userId={user?._id} />
+        <PushNotificationToggle userId={user?.id || user?._id}  />
       </div>
 
       {error ? (

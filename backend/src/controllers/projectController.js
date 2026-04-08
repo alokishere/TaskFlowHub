@@ -74,7 +74,7 @@ const notifyAssignedEmployees = async (project, assignments = []) => {
       title: '📌 New Project Assigned',
       body: `You have been assigned to "${project.title}"`,
       data: {
-        url: '/employee/my-projects',
+        url: '/employee/projects',
         projectId: String(project._id)
       }
     });

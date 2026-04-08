@@ -15,7 +15,12 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 const getPublicVapidKey = () =>
-  import.meta.env.VAPID_PUBLIC_KEY || 'BK7bE0TMHBjI916P-W4HhAFZdvExYH-OxgbVVaKu21R7vv2ohyntxg02TioQX0TbGqcEIk57MH8RokTO1b1DIAs';
+  String(
+    import.meta.env.VITE_VAPID_PUBLIC_KEY ||
+    import.meta.env.REACT_APP_VAPID_PUBLIC_KEY ||
+    import.meta.env.VAPID_PUBLIC_KEY ||
+    ''
+  ).trim();
 
 const canUsePushNotifications = () =>
   typeof window !== 'undefined' &&
