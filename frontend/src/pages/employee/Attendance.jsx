@@ -277,7 +277,7 @@ const Attendance = () => {
         </div>
 
         <div className="overflow-x-auto pb-4 scrollbar-hide">
-          <div className="min-w-[600px]">
+          <div className="min-w-150">
             <div className="mb-4 grid grid-cols-7 gap-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
                 <div key={dayName} className="text-center text-[10px] font-black uppercase tracking-widest text-gray-300">
