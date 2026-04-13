@@ -25,4 +25,6 @@ Set optional API URL in `.env`:
 
 ```bash
 VITE_API_URL=http://localhost:5001
+VITE_IMAGE_BASE_URL=http://localhost:5001
+VITE_VAPID_PUBLIC_KEY=your_public_vapid_key
 ```

@@ -2,13 +2,26 @@ import axios from 'axios';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-const BASE_URL = isLocalhost
-  ? 'http://localhost:5001/api'
-  : 'https://task-flow-hub-5ah4.vercel.app/api';
+const trimTrailingSlash = (value = '') => String(value).replace(/\/+$/, '');
 
-const IMAGE_BASE_URL = isLocalhost
-  ? 'http://localhost:5001/'
-  : 'https://task-flow-hub-5ah4.vercel.app/';
+const apiUrlFromEnv = trimTrailingSlash(import.meta.env.VITE_API_URL || '');
+const imageUrlFromEnv = trimTrailingSlash(import.meta.env.VITE_IMAGE_BASE_URL || '');
+
+const BASE_URL = apiUrlFromEnv
+  ? `${apiUrlFromEnv}/api`
+  : (
+    isLocalhost
+      ? 'http://localhost:5001/api'
+      : 'https://task-flow-hub-5ah4.vercel.app/api'
+  );
+
+const IMAGE_BASE_URL = imageUrlFromEnv
+  ? `${imageUrlFromEnv}/`
+  : (
+    isLocalhost
+      ? 'http://localhost:5001/'
+      : 'https://task-flow-hub-5ah4.vercel.app/'
+  );
 
 const CLICK_TO_REQUEST_WINDOW_MS = 1200;
 

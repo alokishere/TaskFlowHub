@@ -5,7 +5,6 @@ const PushSubscription = require('../models/PushSubscription');
 const { sendPushToAll } = require('../src/utils/pushNotifications');
 
 const router = express.Router();
-router.use(requireAuth);
 
 const defaultNotification = {
   title: '⏰ Punch-In Reminder',
@@ -21,6 +20,23 @@ const isValidSubscription = (subscription = {}) => {
   return Boolean(endpoint && p256dh && auth);
 };
 
+router.get('/public-key', (req, res) => {
+  const publicKey = String(process.env.VAPID_PUBLIC_KEY || '').trim();
+  if (!publicKey) {
+    return res.status(503).json({
+      success: false,
+      message: 'Push notifications are not configured on the server.'
+    });
+  }
+
+  return res.json({
+    success: true,
+    publicKey
+  });
+});
+
+router.use(requireAuth);
+
 router.post('/subscribe', async (req, res) => {
   try {
     const { subscription } = req.body;
@@ -34,9 +50,11 @@ router.post('/subscribe', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid subscription is required' });
     }
 
+    const endpoint = String(subscription.endpoint || '').trim();
+
     await PushSubscription.findOneAndUpdate(
-      { userId },
-      { userId, subscription, createdAt: new Date() },
+      { userId, endpoint },
+      { userId, endpoint, subscription, createdAt: new Date() },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
@@ -49,12 +67,17 @@ router.post('/subscribe', async (req, res) => {
 router.post('/unsubscribe', async (req, res) => {
   try {
     const userId = req.user?._id?.toString();
+    const endpoint = String(req.body?.endpoint || '').trim();
 
     if (!userId || !isValidUserId(userId)) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    await PushSubscription.deleteOne({ userId });
+    if (endpoint) {
+      await PushSubscription.deleteOne({ userId, endpoint });
+    } else {
+      await PushSubscription.deleteMany({ userId });
+    }
 
     return res.json({ success: true, message: 'Push subscription removed' });
   } catch (error) {
