@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const LOGIN_PATH = '/login';
 
 const trimTrailingSlash = (value = '') => String(value).replace(/\/+$/, '');
 
@@ -30,6 +31,48 @@ let recentButtonClickAt = 0;
 const buttonRequestCount = new WeakMap();
 
 const canUseDom = () => typeof window !== 'undefined' && typeof document !== 'undefined';
+
+const decodeJwtPayload = (token) => {
+  try {
+    const payloadPart = token?.split('.')?.[1];
+    if (!payloadPart) return null;
+
+    const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const padLength = (4 - (normalized.length % 4)) % 4;
+    const padded = `${normalized}${'='.repeat(padLength)}`;
+    const json = window.atob(padded);
+    return JSON.parse(json);
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getTokenExpiryAt = () => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return null;
+
+  return payload.exp * 1000;
+};
+
+export const isTokenExpired = () => {
+  const expiryAt = getTokenExpiryAt();
+  if (!expiryAt) return true;
+  return Date.now() >= expiryAt;
+};
+
+export const clearAuthSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+};
+
+const redirectToLogin = () => {
+  if (!canUseDom()) return;
+  if (window.location.pathname === LOGIN_PATH) return;
+  window.location.replace(LOGIN_PATH);
+};
 
 const isTrackableButton = (target) => {
   if (!target || !(target instanceof Element)) {
@@ -121,6 +164,12 @@ const API = axios.create({
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
+    if (isTokenExpired()) {
+      clearAuthSession();
+      redirectToLogin();
+      return config;
+    }
+
     config.headers.Authorization = `Bearer ${token}`;
   }
 
@@ -143,6 +192,12 @@ API.interceptors.response.use(
   },
   (error) => {
     clearRequestLoaderState(error.config);
+
+    if (error?.response?.status === 401 && localStorage.getItem('token')) {
+      clearAuthSession();
+      redirectToLogin();
+    }
+
     return Promise.reject(error);
   }
 );

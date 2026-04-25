@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { clearAuthSession } from "../services/api";
 import {
   LayoutDashboard,
   Briefcase,
@@ -16,8 +17,7 @@ const EmployeeSidebar = ({ onClose }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuthSession();
     navigate("/login");
     onClose?.();
   };

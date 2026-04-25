@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import { clearAuthSession, isTokenExpired } from './services/api';
 
 // Admin Pages
 import AdminDashboard from "./admin/AdminDashboard";
@@ -31,11 +32,34 @@ import Blog from './pages/admin/Blog';
 import BlogList from './pages/admin/BlogList';
 import BlogPreview from './pages/admin/BlogPreview';
 
-const ProtectedRoute = ({ children, role }) => {
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user'));
+  } catch (error) {
+    return null;
+  }
+};
+
+const hasValidSession = () => {
   const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = getStoredUser();
 
   if (!token || !user) {
+    return false;
+  }
+
+  if (isTokenExpired()) {
+    clearAuthSession();
+    return false;
+  }
+
+  return true;
+};
+
+const ProtectedRoute = ({ children, role }) => {
+  const user = getStoredUser();
+
+  if (!hasValidSession()) {
     return <Navigate to="/login" />;
   }
 
@@ -47,10 +71,9 @@ const ProtectedRoute = ({ children, role }) => {
 };
 
 const PublicRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = getStoredUser();
 
-  if (token && user) {
+  if (hasValidSession()) {
     return <Navigate to={user.role === 'admin' ? '/admin' : '/employee'} />;
   }
 

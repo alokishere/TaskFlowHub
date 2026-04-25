@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { clearAuthSession } from "../services/api";
 import {
   LayoutDashboard,
   Users,
@@ -31,8 +32,7 @@ const AdminSidebar = ({ onClose }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuthSession();
     navigate("/login");
     onClose?.();
   };
